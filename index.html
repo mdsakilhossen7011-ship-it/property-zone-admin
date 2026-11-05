@@ -46,7 +46,28 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   <div class="modules">
    <article class="module" id="members"><div class="moduleicon">♙</div><div><h3>Member Management</h3><p>Review member accounts and manage account status with admin-only permissions.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
    <article class="module" id="properties"><div class="moduleicon">⌂</div><div><h3>Property Moderation</h3><p>Review submitted properties and approve or reject listings.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
-   <article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create, edit, publish or expire promotional offers for members.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
+   <article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">FIRESTORE CONNECTED · RULES REQUIRED</span></div></article>
+  <section class="panel" id="offerManager" style="grid-column:1/-1;margin-top:4px">
+   <div class="eyebrow">PROMOTION MANAGER</div><h2>Create & Manage Offers</h2><p class="desc">Published offers appear on the public Property Zone homepage. Save as draft first or publish immediately.</p>
+   <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+    <div>
+     <label class="field" for="offerTitle">OFFER TITLE *</label><input class="control" id="offerTitle" maxlength="90" placeholder="e.g. Special property launch offer">
+     <label class="field" for="offerImage">IMAGE URL (OPTIONAL)</label><input class="control" id="offerImage" type="url" placeholder="https://example.com/offer.jpg">
+     <label class="field" for="offerButtonText">BUTTON TEXT (OPTIONAL)</label><input class="control" id="offerButtonText" maxlength="30" placeholder="Learn more">
+    </div>
+    <div>
+     <label class="field" for="offerDescription">OFFER DETAILS *</label><textarea class="control" id="offerDescription" maxlength="700" placeholder="Write the offer details..."></textarea>
+     <label class="field" for="offerButtonUrl">BUTTON LINK (OPTIONAL)</label><input class="control" id="offerButtonUrl" type="url" placeholder="https://example.com/details">
+    </div>
+   </div>
+   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+    <button class="send" id="saveOfferDraft" type="button" style="width:auto;flex:1;cursor:pointer;opacity:1;margin:0">Save as Draft</button>
+    <button class="send" id="publishOffer" type="button" style="width:auto;flex:1;cursor:pointer;opacity:1;margin:0;background:linear-gradient(120deg,#f1d48c,#b58a42);color:#17130b">Publish Offer</button>
+   </div>
+   <p class="fineprint" id="offerStatus" role="status">Offers need the Firestore security rule shown in the setup instructions before saving will work.</p>
+   <div class="sectionhead"><div><h2>Existing Offers</h2><p>Manage published offers and drafts</p></div><button class="btn" id="refreshOffers" type="button">Refresh</button></div>
+   <div id="offerList" class="quicklist"><div class="activityempty">Loading offers after admin sign-in…</div></div>
+  </section>
    <article class="module" id="commission"><div class="moduleicon">◇</div><div><h3>Referrals & Commission</h3><p>Review referral activity and commission records after tracking is implemented.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
   </div>
   <section class="panel" id="settings" style="margin-top:18px">
@@ -113,7 +134,7 @@ body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibilit
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 const firebaseConfig = {
  apiKey:"AIzaSyDRLWFf4ISfQdoZp7JaQAWwwKCoL_aV6No",
  authDomain:"property-zone-17121.firebaseapp.com",
@@ -133,6 +154,49 @@ const errorBox = document.getElementById("adminLoginError");
 const loginButton = document.getElementById("adminLoginButton");
 const settingsButton = document.getElementById("saveSiteSettings");
 const settingsStatus = document.getElementById("settingsStatus");
+const offerStatus=document.getElementById("offerStatus");
+const offerList=document.getElementById("offerList");
+function offerField(id){return document.getElementById(id).value.trim();}
+function safeOfferUrl(value){if(!value)return "";const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error("শুধু http বা https লিংক ব্যবহার করো।");return u.href;}
+function clearOfferForm(){["offerTitle","offerImage","offerButtonText","offerDescription","offerButtonUrl"].forEach(id=>document.getElementById(id).value="");}
+function offerStatusText(text,isError=false){offerStatus.textContent=text;offerStatus.style.color=isError?"#ffaaa5":"#91d7ad";}
+async function loadOffers(){
+ offerList.innerHTML='<div class="activityempty">Loading offers…</div>';
+ try{
+  const snap=await getDocs(collection(db,"offers"));
+  if(snap.empty){offerList.innerHTML='<div class="activityempty">No offers created yet.</div>';return;}
+  offerList.innerHTML="";
+  snap.forEach(item=>{
+   const o=item.data(),row=document.createElement("div");
+   row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:13px;margin:8px 0;background:#0d131c";
+   const title=document.createElement("strong");title.textContent=o.title||"Untitled offer";
+   const info=document.createElement("p");info.style.cssText="margin:5px 0;color:#91a0b3;font-size:11px";info.textContent=(o.description||"")+" · "+(o.status||"draft").toUpperCase();
+   const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px";
+   const toggle=document.createElement("button");toggle.className="btn";toggle.type="button";toggle.textContent=o.status==="published"?"Unpublish":"Publish";
+   toggle.addEventListener("click",async()=>{toggle.disabled=true;try{await updateDoc(doc(db,"offers",item.id),{status:o.status==="published"?"draft":"published",updatedAt:serverTimestamp()});await loadOffers();offerStatusText("Offer status updated.");}catch(e){offerStatusText("Update failed: "+e.message,true);toggle.disabled=false;}});
+   const remove=document.createElement("button");remove.className="btn";remove.type="button";remove.textContent="Delete";remove.style.color="#ffaaa5";
+   remove.addEventListener("click",async()=>{if(!confirm("এই অফারটি স্থায়ীভাবে Delete করবে?"))return;remove.disabled=true;try{await deleteDoc(doc(db,"offers",item.id));await loadOffers();offerStatusText("Offer deleted.");}catch(e){offerStatusText("Delete failed: "+e.message,true);remove.disabled=false;}});
+   actions.append(toggle,remove);row.append(title,info,actions);offerList.appendChild(row);
+  });
+ }catch(e){offerList.innerHTML='<div class="activityempty">Offers load হয়নি। Firestore Rules আপডেট করো।</div>';offerStatusText("Load failed: "+e.message,true);}
+}
+async function saveOffer(status){
+ const title=offerField("offerTitle"),description=offerField("offerDescription");
+ if(!title||!description){offerStatusText("Title এবং offer details দিতে হবে।",true);return;}
+ let imageUrl="",buttonUrl="";
+ try{imageUrl=safeOfferUrl(offerField("offerImage"));buttonUrl=safeOfferUrl(offerField("offerButtonUrl"));}catch(e){offerStatusText(e.message,true);return;}
+ const button=document.getElementById(status==="published"?"publishOffer":"saveOfferDraft");
+ button.disabled=true;button.textContent="Saving…";
+ try{
+  await addDoc(collection(db,"offers"),{title,description,imageUrl,buttonText:offerField("offerButtonText")||"Learn more",buttonUrl,status,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  clearOfferForm();offerStatusText(status==="published"?"Offer published.":"Offer saved as draft.");await loadOffers();
+ }catch(e){offerStatusText("Save হয়নি: "+e.message+" — Firestore Rules-এ offers permission যোগ করো।",true);}
+ finally{button.disabled=false;button.textContent=status==="published"?"Publish Offer":"Save as Draft";}
+}
+document.getElementById("saveOfferDraft").addEventListener("click",()=>saveOffer("draft"));
+document.getElementById("publishOffer").addEventListener("click",()=>saveOffer("published"));
+document.getElementById("refreshOffers").addEventListener("click",loadOffers);
+
 async function loadSiteSettings(){
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
@@ -188,6 +252,7 @@ async function authorize(user){
   document.body.classList.add("admin-authorized");
   gate.style.display="none";
   loadSiteSettings();
+  loadOffers();
  }catch(e){
   await signOut(auth);
   document.body.classList.remove("admin-authorized");
