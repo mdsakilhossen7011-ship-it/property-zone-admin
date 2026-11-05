@@ -27,6 +27,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   <a href="#commission" onclick="activate(this)"><span class="ico">◇</span>Referrals & Commission</a>
   <div class="navlabel">INSIGHTS & SYSTEM</div>
   <a href="#activity" onclick="activate(this)"><span class="ico">◷</span>Activity Log</a>
+  <a href="#settings" onclick="activate(this)"><span class="ico">⚙</span>Website Settings</a>
  </nav>
  <div class="sidebottom"><strong>◉ &nbsp; Admin workspace</strong><p>Separate control panel for Property Zone. Secure admin access setup is still required.</p></div>
 </aside>
@@ -48,6 +49,21 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    <article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create, edit, publish or expire promotional offers for members.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
    <article class="module" id="commission"><div class="moduleicon">◇</div><div><h3>Referrals & Commission</h3><p>Review referral activity and commission records after tracking is implemented.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
   </div>
+  <section class="panel" id="settings" style="margin-top:18px">
+   <div class="eyebrow">PLATFORM CONFIGURATION</div><h2>Website Settings</h2><p class="desc">Update the public website identity and contact details. Changes are saved to Firebase when the database rules allow admin access.</p>
+   <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+    <div><label class="field" for="siteName">WEBSITE NAME</label><input class="control" id="siteName" maxlength="80" placeholder="Property Zone">
+     <label class="field" for="siteLogo">LOGO IMAGE URL</label><input class="control" id="siteLogo" type="url" placeholder="https://example.com/logo.png">
+     <label class="field" for="siteFavicon">FAVICON IMAGE URL</label><input class="control" id="siteFavicon" type="url" placeholder="https://example.com/favicon.ico">
+    </div>
+    <div><label class="field" for="siteDescription">WEBSITE DESCRIPTION</label><textarea class="control" id="siteDescription" maxlength="500" placeholder="Describe your Property Zone website..."></textarea>
+     <label class="field" for="siteContact">CONTACT EMAIL</label><input class="control" id="siteContact" type="email" placeholder="support@example.com">
+     <label class="field" for="sitePhone">CONTACT PHONE (OPTIONAL)</label><input class="control" id="sitePhone" type="tel" maxlength="30" placeholder="+880...">
+    </div>
+   </div>
+   <button class="send" id="saveSiteSettings" type="button" style="cursor:pointer;opacity:1">Save Website Settings</button>
+   <p class="fineprint" id="settingsStatus" role="status">Logo and favicon are currently set by image URL. Direct file upload and applying these settings to the public website will be connected in a later step.</p>
+  </section>
   <div class="lower">
    <section class="panel" id="notices"><div class="eyebrow">MEMBER COMMUNICATION</div><h2>Broadcast centre</h2><p class="desc">Compose an announcement for the Property Zone community.</p>
     <label class="field" for="noticeTitle">NOTICE TITLE</label><input class="control" id="noticeTitle" maxlength="100" placeholder="e.g. Important platform update">
@@ -97,7 +113,7 @@ body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibilit
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 const firebaseConfig = {
  apiKey:"AIzaSyDRLWFf4ISfQdoZp7JaQAWwwKCoL_aV6No",
  authDomain:"property-zone-17121.firebaseapp.com",
@@ -115,6 +131,41 @@ const gate = document.getElementById("adminLoginGate");
 const form = document.getElementById("adminLoginForm");
 const errorBox = document.getElementById("adminLoginError");
 const loginButton = document.getElementById("adminLoginButton");
+const settingsButton = document.getElementById("saveSiteSettings");
+const settingsStatus = document.getElementById("settingsStatus");
+async function loadSiteSettings(){
+ try{
+  const snap = await getDoc(doc(db,"siteSettings","general"));
+  if(snap.exists()){
+   const s=snap.data();
+   document.getElementById("siteName").value=s.siteName||"";
+   document.getElementById("siteLogo").value=s.logoUrl||"";
+   document.getElementById("siteFavicon").value=s.faviconUrl||"";
+   document.getElementById("siteDescription").value=s.description||"";
+   document.getElementById("siteContact").value=s.contactEmail||"";
+   document.getElementById("sitePhone").value=s.contactPhone||"";
+  }
+ }catch(e){ settingsStatus.textContent="Settings load হয়নি। Firestore Rules-এ admin settings access যোগ করতে হবে।"; }
+}
+settingsButton.addEventListener("click",async()=>{
+ settingsButton.disabled=true; settingsButton.textContent="Saving...";
+ settingsStatus.textContent="Saving settings...";
+ const payload={
+  siteName:document.getElementById("siteName").value.trim(),
+  logoUrl:document.getElementById("siteLogo").value.trim(),
+  faviconUrl:document.getElementById("siteFavicon").value.trim(),
+  description:document.getElementById("siteDescription").value.trim(),
+  contactEmail:document.getElementById("siteContact").value.trim(),
+  contactPhone:document.getElementById("sitePhone").value.trim(),
+  updatedAt:serverTimestamp()
+ };
+ try{
+  await setDoc(doc(db,"siteSettings","general"),payload,{merge:true});
+  settingsStatus.textContent="Website settings saved successfully.";
+ }catch(e){
+  settingsStatus.textContent="Save হয়নি। Firestore Rules-এ admin-এর siteSettings write permission যোগ করতে হবে।";
+ }finally{settingsButton.disabled=false;settingsButton.textContent="Save Website Settings";}
+});
 function showError(message){ errorBox.textContent = message; }
 async function authorize(user){
  if(!user){ document.body.classList.remove("admin-authorized"); gate.style.display="flex"; return; }
@@ -136,6 +187,7 @@ async function authorize(user){
   }
   document.body.classList.add("admin-authorized");
   gate.style.display="none";
+  loadSiteSettings();
  }catch(e){
   await signOut(auth);
   document.body.classList.remove("admin-authorized");
