@@ -156,7 +156,7 @@ body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibilit
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, inMemoryPersistence } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 const firebaseConfig = {
@@ -171,9 +171,6 @@ const ADMIN_UID = "Ry06huUzzmeqryzna9lPzpNw4Rr1";
 const ADMIN_EMAIL = "ridoyhasank5434@gmail.com";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-// Admin sign-in is memory-only: a page refresh requires signing in again.
-await setPersistence(auth, inMemoryPersistence);
-await signOut(auth);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const gate = document.getElementById("adminLoginGate");
