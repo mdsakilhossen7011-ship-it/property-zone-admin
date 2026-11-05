@@ -96,10 +96,13 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    <section class="panel" id="notices"><div class="eyebrow">MEMBER COMMUNICATION</div><h2>Broadcast centre</h2><p class="desc">Compose an announcement for the Property Zone community.</p>
     <label class="field" for="noticeTitle">NOTICE TITLE</label><input class="control" id="noticeTitle" maxlength="100" placeholder="e.g. Important platform update">
     <label class="field" for="noticeMessage">MESSAGE</label><textarea class="control" id="noticeMessage" maxlength="2000" placeholder="Write your announcement here..."></textarea>
-    <button class="send" type="button" disabled>Send Notice · Setup Pending</button>
-    <p class="fineprint">Sending is not enabled yet. Secure Admin sign-in, verified admin permissions and Firestore security rules must be configured before notices can be delivered to member accounts.</p>
+    <label class="field" for="noticeAudience">RECIPIENTS</label><select class="control" id="noticeAudience"><option value="all">All members</option><option value="active">Active members only</option></select>
+    <button class="send" id="sendNoticeButton" type="button" style="cursor:pointer;opacity:1">Publish Notice</button>
+    <p class="fineprint" id="noticeStatus" role="status">Notices will appear in the signed-in member dashboard after publishing.</p>
+    <div class="sectionhead"><div><h2>Published Notices</h2><p>Recent member announcements</p></div><button class="btn" id="refreshNotices" type="button">Refresh</button></div>
+    <div id="noticeList" class="quicklist"><div class="activityempty">No notices loaded.</div></div>
    </section>
-   <section class="panel" id="activity"><div class="eyebrow">SYSTEM MONITOR</div><h2>System pulse</h2><p class="desc">Connection and activity overview</p><div class="activityempty"><b>No activity data available</b>Activity history will appear here after the admin database is connected.</div><div class="quicklist" style="margin-top:13px"><div class="quickrow"><span>Admin authentication</span><span>Not configured</span></div><div class="quickrow"><span>Database connection</span><span>Pending</span></div><div class="quickrow"><span>Member notifications</span><span>Pending</span></div></div></section>
+   <section class="panel" id="activity"><div class="eyebrow">SYSTEM MONITOR</div><h2>System pulse</h2><p class="desc">Connection and activity overview</p><div class="quicklist" id="activityList"><div class="activityempty">Loading admin activity…</div></div><p class="fineprint" id="activityStatus" role="status">Admin actions are recorded here.</p><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn" id="refreshActivity" type="button">Refresh Activity</button></div></section>
   </div>
   <footer>PROLOGIS, INC. (PLD) · ADMIN PANEL &nbsp;—&nbsp; Secure authentication and role-based permissions are required before operational use.</footer>
  </div>
@@ -167,6 +170,13 @@ const memberStatus=document.getElementById("memberStatus");
 const memberList=document.getElementById("memberList");
 let memberRecords=[];
 const commissionStatus=document.getElementById("commissionStatus"),referralList=document.getElementById("referralList");
+const noticeStatus=document.getElementById("noticeStatus"),noticeList=document.getElementById("noticeList"),activityList=document.getElementById("activityList"),activityStatus=document.getElementById("activityStatus");
+async function writeActivity(action,details=""){try{await addDoc(collection(db,"activityLogs"),{action,details,adminUid:auth.currentUser?.uid||"",adminEmail:auth.currentUser?.email||"",createdAt:serverTimestamp()});}catch(e){console.warn("Activity log write failed:",e.message);}}
+function messageStatus(el,msg,bad=false){if(!el)return;el.textContent=msg;el.style.color=bad?"#ffaaa5":"#91d7ad";}
+async function loadNotices(){noticeList.innerHTML='<div class="activityempty">Loading notices…</div>';try{const snap=await getDocs(collection(db,"notices"));const docs=snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0));noticeList.innerHTML="";if(!docs.length){noticeList.innerHTML='<div class="activityempty">No notices published yet.</div>';return;}docs.forEach(d=>{const n=d.data(),row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:10px;padding:12px;margin:7px 0";const title=document.createElement("strong");title.textContent=n.title||"Untitled notice";const msg=document.createElement("p");msg.style.cssText="white-space:pre-wrap;color:#91a0b3;font-size:11px;margin:6px 0";msg.textContent=n.message||"";const meta=document.createElement("div");meta.className="fineprint";meta.textContent="Audience: "+(n.audience||"all")+" · "+(n.status||"published");const del=document.createElement("button");del.className="btn";del.type="button";del.textContent="Delete";del.style.cssText="margin-top:8px;color:#ffaaa5";del.addEventListener("click",async()=>{if(!confirm("এই নোটিশটি মুছে ফেলবে?"))return;del.disabled=true;try{await deleteDoc(doc(db,"notices",d.id));await writeActivity("Deleted notice",n.title||d.id);await loadNotices();messageStatus(noticeStatus,"Notice deleted.");}catch(e){messageStatus(noticeStatus,"Delete failed: "+e.message,true);del.disabled=false;}});row.append(title,msg,meta,del);noticeList.appendChild(row);});}catch(e){noticeList.innerHTML='<div class="activityempty">Could not load notices. Check Firestore Rules.</div>';messageStatus(noticeStatus,"Notice load failed: "+e.message,true);}}
+async function loadActivity(){activityList.innerHTML='<div class="activityempty">Loading activity…</div>';try{const snap=await getDocs(collection(db,"activityLogs"));const docs=snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0)).slice(0,50);activityList.innerHTML="";if(!docs.length){activityList.innerHTML='<div class="activityempty"><b>No activity recorded yet</b>Admin actions will appear here.</div>';return;}docs.forEach(d=>{const a=d.data(),row=document.createElement("div");row.className="quickrow";const left=document.createElement("div");const strong=document.createElement("strong");strong.textContent=a.action||"Admin action";const detail=document.createElement("div");detail.className="fineprint";detail.textContent=(a.details||"")+(a.adminEmail?" · "+a.adminEmail:"");left.append(strong,detail);const date=document.createElement("span");date.textContent=a.createdAt?.toDate?a.createdAt.toDate().toLocaleString():"Just now";row.append(left,date);activityList.appendChild(row);});messageStatus(activityStatus,"Showing latest "+docs.length+" activity records.");}catch(e){activityList.innerHTML='<div class="activityempty">Could not load activity. Check Firestore Rules.</div>';messageStatus(activityStatus,"Activity load failed: "+e.message,true);}}
+document.getElementById("sendNoticeButton").addEventListener("click",async()=>{const title=document.getElementById("noticeTitle").value.trim(),message=document.getElementById("noticeMessage").value.trim(),audience=document.getElementById("noticeAudience").value;if(!title||!message){messageStatus(noticeStatus,"Notice title এবং message দুটোই দিতে হবে।",true);return;}const b=document.getElementById("sendNoticeButton");b.disabled=true;b.textContent="Publishing…";try{const count=await getDocs(collection(db,"members"));const recipients=count.docs.filter(x=>audience==="all"||x.data().status==="active").length;await addDoc(collection(db,"notices"),{title,message,audience,status:"published",recipientCount:recipients,createdAt:serverTimestamp(),createdBy:auth.currentUser?.uid||"",createdByEmail:auth.currentUser?.email||""});await writeActivity("Published notice",title+" · "+recipients+" recipient(s)");document.getElementById("noticeTitle").value="";document.getElementById("noticeMessage").value="";messageStatus(noticeStatus,"Notice published for "+recipients+" member(s).");await loadNotices();await loadActivity();}catch(e){messageStatus(noticeStatus,"Publish failed: "+e.message+" — Firestore Rules update is pending.",true);}finally{b.disabled=false;b.textContent="Publish Notice";}});
+document.getElementById("refreshNotices").addEventListener("click",loadNotices);document.getElementById("refreshActivity").addEventListener("click",loadActivity);
 function commissionMessage(s,bad=false){commissionStatus.textContent=s;commissionStatus.style.color=bad?"#ffaaa5":"#91d7ad";}
 async function loadReferrals(){
  referralList.innerHTML='<div class="activityempty">Loading referral records…</div>';
@@ -183,7 +193,7 @@ async function loadReferrals(){
   commissionMessage("Loaded "+referred.length+" referral record(s). Commission amounts need eligible transaction data.");
  }catch(e){referralList.innerHTML='<div class="activityempty">Could not load referrals. Check Firestore Rules.</div>';commissionMessage("Referral load failed: "+e.message,true);}
 }
-document.getElementById("saveCommissionRate").addEventListener("click",async()=>{const rate=Number(document.getElementById("commissionRate").value);if(!Number.isFinite(rate)||rate<0||rate>100){commissionMessage("Rate must be between 0 and 100.",true);return;}const b=document.getElementById("saveCommissionRate");b.disabled=true;b.textContent="Saving…";try{await setDoc(doc(db,"referralSettings","general"),{rate,updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""},{merge:true});commissionMessage("Commission rate saved: "+rate+"%.");}catch(e){commissionMessage("Save failed: "+e.message+" — referralSettings Firestore rule required.",true);}finally{b.disabled=false;b.textContent="Save Rate";}});
+document.getElementById("saveCommissionRate").addEventListener("click",async()=>{const rate=Number(document.getElementById("commissionRate").value);if(!Number.isFinite(rate)||rate<0||rate>100){commissionMessage("Rate must be between 0 and 100.",true);return;}const b=document.getElementById("saveCommissionRate");b.disabled=true;b.textContent="Saving…";try{await setDoc(doc(db,"referralSettings","general"),{rate,updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""},{merge:true});commissionMessage("Commission rate saved: "+rate+"%.");await writeActivity("Updated commission rate",rate+"%");await loadActivity();}catch(e){commissionMessage("Save failed: "+e.message+" — referralSettings Firestore rule required.",true);}finally{b.disabled=false;b.textContent="Save Rate";}});
 document.getElementById("refreshReferrals").addEventListener("click",loadReferrals);
 
 function offerField(id){return document.getElementById(id).value.trim();}
@@ -219,7 +229,7 @@ async function saveOffer(status){
  button.disabled=true;button.textContent="Saving…";
  try{
   await addDoc(collection(db,"offers"),{title,description,imageUrl,buttonText:offerField("offerButtonText")||"Learn more",buttonUrl,status,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-  clearOfferForm();offerStatusText(status==="published"?"Offer published.":"Offer saved as draft.");await loadOffers();
+  clearOfferForm();offerStatusText(status==="published"?"Offer published.":"Offer saved as draft.");await writeActivity(status==="published"?"Published offer":"Saved offer draft",title);await loadOffers();await loadActivity();
  }catch(e){offerStatusText("Save হয়নি: "+e.message+" — Firestore Rules-এ offers permission যোগ করো।",true);}
  finally{button.disabled=false;button.textContent=status==="published"?"Publish Offer":"Save as Draft";}
 }
@@ -240,7 +250,7 @@ function renderMembers(){
   const uid=document.createElement("div");uid.className="fineprint";uid.textContent="UID: "+m.uid;
   const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
   const action=document.createElement("button");action.className="btn";action.type="button";action.textContent=m.status==="active"?"Deactivate":"Activate";
-  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});await loadMembers();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
+  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadActivity();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
   info.append(name,email,uid,status);row.append(info,action);memberList.appendChild(row);
  });
 }
@@ -283,7 +293,7 @@ settingsButton.addEventListener("click",async()=>{
  };
  try{
   await setDoc(doc(db,"siteSettings","general"),payload,{merge:true});
-  settingsStatus.textContent="Website settings saved successfully.";
+  settingsStatus.textContent="Website settings saved successfully.";await writeActivity("Updated website settings",payload.siteName||"Website settings");await loadActivity();
  }catch(e){
   settingsStatus.textContent="Save হয়নি। Firestore Rules-এ admin-এর siteSettings write permission যোগ করতে হবে।";
  }finally{settingsButton.disabled=false;settingsButton.textContent="Save Website Settings";}
@@ -313,6 +323,8 @@ async function authorize(user){
   loadOffers();
   loadMembers();
   loadReferrals();
+  loadNotices();
+  loadActivity();
  }catch(e){
   await signOut(auth);
   document.body.classList.remove("admin-authorized");
