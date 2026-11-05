@@ -219,6 +219,7 @@ async function loadReferrals(){
  try{
   const [ms,ss]=await Promise.all([getDocs(collection(db,"members")),getDoc(doc(db,"referralSettings","general"))]);
   const members=ms.docs.map(d=>({uid:d.id,...d.data()}));
+  await Promise.all(members.map(async member=>{const code=String(member.referralCode||"").trim().toUpperCase();if(!code)return;try{const codeRef=doc(db,"referralCodes",code),codeSnap=await getDoc(codeRef);if(!codeSnap.exists())await setDoc(codeRef,{code,active:true,createdAt:member.createdAt||serverTimestamp()});}catch(codeError){console.warn("Referral code migration skipped:",codeError.message);}}));
   if(ss.exists())document.getElementById("commissionRate").value=Number(ss.data().rate??10);
   const referred=members.filter(x=>String(x.referredByCode||"").trim());
   await Promise.all(referred.map(async member=>{try{const recordRef=doc(db,"referralRegistrations",String(member.referredByCode).trim().toUpperCase(),"members",member.uid);const record=await getDoc(recordRef);if(!record.exists())await setDoc(recordRef,{createdAt:member.createdAt||serverTimestamp()});}catch(migrationError){console.warn("Referral record migration skipped:",migrationError.message);}}));
