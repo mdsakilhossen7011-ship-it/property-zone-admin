@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0f">
-<title>Property Zone — Estate Command</title>
+<title>Prologis, Inc. (PLD) — Admin Panel</title>
 <style>
 :root{--bg:#080b10;--surface:#101722;--surface2:#182332;--line:#263447;--gold:#e0b968;--gold2:#ffe2a0;--muted:#91a0b3;--white:#f5f7fb;--green:#8ed7b0}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--white);font:14px/1.5 Inter,ui-sans-serif,system-ui,Arial}
@@ -15,7 +15,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
 <body>
 <div class="shell">
 <aside class="sidebar" id="sidebar">
- <div class="brand"><div class="brandmark">P</div><div class="brandname">PROPERTY <span>ZONE</span><small>ADMIN CONTROL ROOM</small></div></div>
+ <div class="brand"><div class="brandmark">P</div><div class="brandname">PROLOGIS, INC. <span>(PLD)</span><small>ADMIN CONTROL ROOM</small></div></div>
  <nav class="nav">
   <div class="navlabel">WORKSPACE</div>
   <a class="active" href="#overview" onclick="activate(this)"><span class="ico">◈</span>Overview</a>
@@ -29,12 +29,12 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   <a href="#activity" onclick="activate(this)"><span class="ico">◷</span>Activity Log</a>
   <a href="#settings" onclick="activate(this)"><span class="ico">⚙</span>Website Settings</a>
  </nav>
- <div class="sidebottom"><strong>◉ &nbsp; Admin workspace</strong><p>Separate control panel for Property Zone. Secure admin access setup is still required.</p></div>
+ <div class="sidebottom"><strong>◉ &nbsp; Prologis, Inc. (PLD)</strong><p>Admin workspace display name.</p></div>
 </aside>
 <main class="main">
- <header class="topbar"><div class="topright"><button class="mobilemenu" onclick="toggleMenu()">☰</button><span class="crumb">Property Zone &nbsp;/&nbsp; <b>Overview</b></span></div><div class="topright"><span class="livepill">● &nbsp; CONTROL PANEL</span><div class="avatar">A</div></div></header>
+ <header class="topbar"><div class="topright"><button class="mobilemenu" onclick="toggleMenu()">☰</button><span class="crumb">Prologis, Inc. (PLD) &nbsp;/&nbsp; <b>Overview</b></span></div><div class="topright"><span class="livepill">● &nbsp; CONTROL PANEL</span><div class="avatar">A</div></div></header>
  <div class="content" id="overview">
-  <div class="welcome"><div><div class="eyebrow">PROPERTY ZONE / ADMINISTRATION</div><h1>Your command centre</h1><p>A sharper workspace for managing your property ecosystem.</p></div><div class="datechip">✦ &nbsp; ESTATE COMMAND · 01</div></div>
+  <div class="welcome"><div><div class="eyebrow">PROLOGIS, INC. (PLD) / ADMINISTRATION</div><h1>Your command centre</h1><p>A sharper workspace for managing your property ecosystem.</p></div><div class="datechip">✦ &nbsp; ESTATE COMMAND · 01</div></div>
   <div class="setup"><div class="symbol">⚠</div><div><strong>Initial setup is still required</strong><p>This is the redesigned admin interface. Live records, publishing actions and member notices remain disabled until secure Firebase admin authentication, database access and Firestore rules are configured.</p></div></div>
   <div class="stats">
    <div class="stat"><div class="stathead">TOTAL MEMBERS <span class="staticon">♙</span></div><div class="statvalue">—</div><div class="statfoot">Waiting for secure database connection</div></div>
@@ -73,7 +73,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    </section>
    <section class="panel" id="activity"><div class="eyebrow">SYSTEM MONITOR</div><h2>System pulse</h2><p class="desc">Connection and activity overview</p><div class="activityempty"><b>No activity data available</b>Activity history will appear here after the admin database is connected.</div><div class="quicklist" style="margin-top:13px"><div class="quickrow"><span>Admin authentication</span><span>Not configured</span></div><div class="quickrow"><span>Database connection</span><span>Pending</span></div><div class="quickrow"><span>Member notifications</span><span>Pending</span></div></div></section>
   </div>
-  <footer>PROPERTY ZONE · ESTATE COMMAND &nbsp;—&nbsp; Secure authentication and role-based permissions are required before operational use.</footer>
+  <footer>PROLOGIS, INC. (PLD) · ADMIN PANEL &nbsp;—&nbsp; Secure authentication and role-based permissions are required before operational use.</footer>
  </div>
 </main>
 </div>
@@ -98,7 +98,7 @@ body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibilit
 </style>
 <div id="adminLoginGate">
  <form class="loginbox" id="adminLoginForm">
-  <div class="loginbrand">PROPERTY ZONE · ADMIN</div>
+  <div class="loginbrand">PROLOGIS, INC. (PLD) · ADMIN</div>
   <h1>Admin sign in</h1>
   <p>Sign in with your authorized administrator account.</p>
   <label for="adminEmail">ADMIN EMAIL</label>
