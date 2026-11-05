@@ -65,4 +65,101 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
 function activate(link){document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));link.classList.add('active');document.getElementById('sidebar').classList.remove('open')}
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open')}
 </script>
+
+<style>
+#adminLoginGate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 0%,#1c2a3c,#080b10 68%)}
+#adminLoginGate .loginbox{width:min(100%,410px);border:1px solid #3b4655;border-radius:18px;padding:28px;background:#101722;box-shadow:0 25px 90px #0009}
+#adminLoginGate .loginbrand{color:#ffe2a0;font-weight:900;letter-spacing:1.5px;font-size:13px}
+#adminLoginGate h1{font-size:25px;margin:17px 0 5px}
+#adminLoginGate p{color:#91a0b3;font-size:12px;margin:0 0 20px}
+#adminLoginGate label{display:block;color:#b7c0cb;font-size:11px;font-weight:700;margin:13px 0 6px}
+#adminLoginGate input{width:100%;padding:12px;border:1px solid #303a47;border-radius:9px;background:#090e15;color:#fff;outline:none}
+#adminLoginGate input:focus{border-color:#d0a95f}
+#adminLoginGate button{width:100%;padding:12px;border:0;border-radius:9px;background:linear-gradient(120deg,#f1d48c,#b58a42);color:#17130b;font-weight:900;margin-top:17px}
+#adminLoginGate button:disabled{opacity:.6}
+#adminLoginError{color:#ffaaa5!important;min-height:18px;margin:12px 0 0!important}
+body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibility:hidden}
+</style>
+<div id="adminLoginGate">
+ <form class="loginbox" id="adminLoginForm">
+  <div class="loginbrand">PROPERTY ZONE · ADMIN</div>
+  <h1>Admin sign in</h1>
+  <p>Sign in with your authorized administrator account.</p>
+  <label for="adminEmail">ADMIN EMAIL</label>
+  <input id="adminEmail" type="email" autocomplete="username" required value="ridoyhasank5434@gmail.com" readonly>
+  <label for="adminPassword">PASSWORD</label>
+  <input id="adminPassword" type="password" autocomplete="current-password" required placeholder="Enter your password">
+  <button id="adminLoginButton" type="submit">Secure Login</button>
+  <p id="adminLoginError" role="alert"></p>
+ </form>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+const firebaseConfig = {
+ apiKey:"AIzaSyDRLWFf4ISfQdoZp7JaQAWwwKCoL_aV6No",
+ authDomain:"property-zone-17121.firebaseapp.com",
+ projectId:"property-zone-17121",
+ storageBucket:"property-zone-17121.firebasestorage.app",
+ messagingSenderId:"631227640032",
+ appId:"1:631227640032:web:855536883072ccfe3b8885"
+};
+const ADMIN_UID = "Ry06huUzzmeqryzna9lPzpNw4Rr1";
+const ADMIN_EMAIL = "ridoyhasank5434@gmail.com";
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const gate = document.getElementById("adminLoginGate");
+const form = document.getElementById("adminLoginForm");
+const errorBox = document.getElementById("adminLoginError");
+const loginButton = document.getElementById("adminLoginButton");
+function showError(message){ errorBox.textContent = message; }
+async function authorize(user){
+ if(!user){ document.body.classList.remove("admin-authorized"); gate.style.display="flex"; return; }
+ if(user.uid !== ADMIN_UID || user.email !== ADMIN_EMAIL || !user.emailVerified){
+  await signOut(auth);
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  showError("এই অ্যাকাউন্টটি অনুমোদিত Admin নয় অথবা ইমেইল Verify করা হয়নি।");
+  return;
+ }
+ try{
+  const adminSnap = await getDoc(doc(db,"admins",user.uid));
+  if(!adminSnap.exists() || adminSnap.data().role !== "admin" || adminSnap.data().active !== true){
+   await signOut(auth);
+   document.body.classList.remove("admin-authorized");
+   gate.style.display="flex";
+   showError("Admin permission এখনো সক্রিয় হয়নি। Firebase Firestore-এ admins/"+user.uid+" ডকুমেন্ট তৈরি করতে হবে।");
+   return;
+  }
+  document.body.classList.add("admin-authorized");
+  gate.style.display="none";
+ }catch(e){
+  await signOut(auth);
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  showError("Database access হয়নি। Firestore Database ও Security Rules সেটআপ যাচাই করো।");
+ }
+}
+onAuthStateChanged(auth, user => { authorize(user).catch(()=>showError("Admin verification failed. Please try again.")); });
+form.addEventListener("submit", async event=>{
+ event.preventDefault(); showError(""); loginButton.disabled=true; loginButton.textContent="Verifying...";
+ try{
+  const credential = await signInWithEmailAndPassword(auth,ADMIN_EMAIL,document.getElementById("adminPassword").value);
+  if(!credential.user.emailVerified) showError("আগে ইমেইল Verify করো।");
+ }catch(e){
+  const messages={
+   "auth/invalid-credential":"ইমেইল বা পাসওয়ার্ড সঠিক নয়।",
+   "auth/too-many-requests":"অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করো।",
+   "auth/network-request-failed":"ইন্টারনেট সংযোগ পরীক্ষা করো।"
+  };
+  showError(messages[e.code] || "Login হয়নি: "+e.message);
+ }finally{
+  loginButton.disabled=false; loginButton.textContent="Secure Login";
+ }
+});
+</script>
+
 </body></html>
