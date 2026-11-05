@@ -303,7 +303,7 @@ function renderMembers(){
   const uid=document.createElement("div");uid.className="fineprint";uid.textContent="UID: "+m.uid;
   const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
   const action=document.createElement("button");action.className="btn";action.type="button";action.textContent=m.status==="active"?"Deactivate":"Activate";
-  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadActivity();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
+  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadReferrals();await loadActivity();await loadAdminOverview();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
   info.append(name,email,uid,status);row.append(info,action);memberList.appendChild(row);
  });
 }
