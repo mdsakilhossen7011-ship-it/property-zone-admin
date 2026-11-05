@@ -13,5 +13,19 @@
 <div class="notice"><strong>Setup required:</strong> Admin sign-in, role-based permissions and live database controls are not enabled yet. This is the initial admin dashboard layout only.</div>
 <div class="grid"><div class="card"><div class="label">Total Users</div><div class="value">—</div><div class="label">Secure database connection pending</div></div><div class="card"><div class="label">Total Properties</div><div class="value">—</div><div class="label">Secure database connection pending</div></div><div class="card"><div class="label">Published Offers</div><div class="value">—</div><div class="label">Secure database connection pending</div></div></div>
 <div class="sections"><div class="card section"><h2>Manage Offers</h2><p>Create, edit, publish or expire promotional offers for members.</p><span class="status">Not connected yet</span></div><div class="card section"><h2>Manage Users</h2><p>Review member accounts and manage account status with admin-only permissions.</p><span class="status">Not connected yet</span></div><div class="card section"><h2>Manage Properties</h2><p>Review submitted properties and approve or reject listings.</p><span class="status">Not connected yet</span></div><div class="card section"><h2>Referrals &amp; Commission</h2><p>Review referral activity and commission records after tracking is implemented.</p><span class="status">Not connected yet</span></div></div>
+
+<div class="card section" style="margin-top:18px">
+<h2>Send Notice to Members</h2>
+<p>Write an announcement for all Property Zone members. Notices will appear in the member Notifications area after the secure database connection is enabled.</p>
+<div style="display:grid;gap:10px;margin-top:14px">
+<label class="label" for="noticeTitle">Notice Title</label>
+<input id="noticeTitle" type="text" maxlength="100" placeholder="e.g. Important platform update" style="width:100%;padding:12px;border-radius:9px;border:1px solid var(--line);background:#0b0d12;color:var(--white)">
+<label class="label" for="noticeMessage">Notice Message</label>
+<textarea id="noticeMessage" rows="5" maxlength="2000" placeholder="Write your announcement here..." style="width:100%;padding:12px;border-radius:9px;border:1px solid var(--line);background:#0b0d12;color:var(--white);resize:vertical"></textarea>
+<button type="button" disabled style="padding:12px 16px;border:0;border-radius:9px;background:#66552f;color:#ddd;opacity:.75;font-weight:700">Send Notice — Database Setup Pending</button>
+<small style="color:var(--muted)">Sending is not active yet. Secure Admin sign-in, verified admin permissions and Firestore security rules must be configured first. This prevents ordinary members from sending notices.</small>
+</div>
+</div>
+
 <footer>Property Zone Admin · Secure authentication and role-based access must be configured before operational use.</footer>
 </main></body></html>
