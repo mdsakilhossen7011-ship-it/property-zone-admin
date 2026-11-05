@@ -44,7 +44,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   </div>
   <div class="sectionhead"><div><h2>Your workspace</h2><p>Every essential control, organised in one place</p></div><span class="tag">CONTROL SUITE</span></div>
   <div class="modules">
-   <article class="module" id="members"><div class="moduleicon">♙</div><div><h3>Member Management</h3><p>Review member accounts and manage account status with admin-only permissions.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
+   <article class="module" id="members"><div class="moduleicon">♙</div><div><h3>Member Management</h3><p>Review member accounts and manage account status with admin-only permissions.</p><span class="state">FIRESTORE CONNECTED</span></div></article>
   <section class="panel" id="memberManager" style="grid-column:1/-1;margin-top:4px">
    <div class="eyebrow">MEMBER DIRECTORY</div><h2>Registered Members</h2>
    <div style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0"><input class="control" id="memberSearch" type="search" placeholder="Search name, email or UID..." style="flex:1;min-width:180px"><button class="btn" id="refreshMembers" type="button">Refresh Members</button></div>
@@ -219,7 +219,9 @@ function renderMembers(){
   const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";
   const uid=document.createElement("div");uid.className="fineprint";uid.textContent="UID: "+m.uid;
   const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
-  info.append(name,email,uid,status);row.appendChild(info);memberList.appendChild(row);
+  const action=document.createElement("button");action.className="btn";action.type="button";action.textContent=m.status==="active"?"Deactivate":"Activate";
+  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});await loadMembers();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
+  info.append(name,email,uid,status);row.append(info,action);memberList.appendChild(row);
  });
 }
 async function loadMembers(){
