@@ -221,6 +221,7 @@ async function loadReferrals(){
   const members=ms.docs.map(d=>({uid:d.id,...d.data()}));
   if(ss.exists())document.getElementById("commissionRate").value=Number(ss.data().rate??10);
   const referred=members.filter(x=>String(x.referredByCode||"").trim());
+  await Promise.all(referred.map(async member=>{try{const recordRef=doc(db,"referralRegistrations",String(member.referredByCode).trim().toUpperCase(),"members",member.uid);const record=await getDoc(recordRef);if(!record.exists())await setDoc(recordRef,{createdAt:member.createdAt||serverTimestamp()});}catch(migrationError){console.warn("Referral record migration skipped:",migrationError.message);}}));
   document.getElementById("referralCount").textContent=String(referred.length);
   document.getElementById("activeReferralCount").textContent=String(referred.filter(x=>x.status==="active").length);
   referralList.innerHTML="";
