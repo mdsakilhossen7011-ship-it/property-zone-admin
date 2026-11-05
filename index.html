@@ -45,6 +45,12 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   <div class="sectionhead"><div><h2>Your workspace</h2><p>Every essential control, organised in one place</p></div><span class="tag">CONTROL SUITE</span></div>
   <div class="modules">
    <article class="module" id="members"><div class="moduleicon">♙</div><div><h3>Member Management</h3><p>Review member accounts and manage account status with admin-only permissions.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
+  <section class="panel" id="memberManager" style="grid-column:1/-1;margin-top:4px">
+   <div class="eyebrow">MEMBER DIRECTORY</div><h2>Registered Members</h2>
+   <div style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0"><input class="control" id="memberSearch" type="search" placeholder="Search name, email or UID..." style="flex:1;min-width:180px"><button class="btn" id="refreshMembers" type="button">Refresh Members</button></div>
+   <p class="fineprint" id="memberStatus" role="status">Loading members…</p>
+   <div id="memberList" class="quicklist"></div>
+  </section>
    <article class="module" id="properties"><div class="moduleicon">⌂</div><div><h3>Property Moderation</h3><p>Review submitted properties and approve or reject listings.</p><span class="state">DATABASE SETUP PENDING</span></div></article>
    <article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">FIRESTORE CONNECTED · RULES REQUIRED</span></div></article>
   <section class="panel" id="offerManager" style="grid-column:1/-1;margin-top:4px">
@@ -156,6 +162,10 @@ const settingsButton = document.getElementById("saveSiteSettings");
 const settingsStatus = document.getElementById("settingsStatus");
 const offerStatus=document.getElementById("offerStatus");
 const offerList=document.getElementById("offerList");
+const memberStatus=document.getElementById("memberStatus");
+const memberList=document.getElementById("memberList");
+let memberRecords=[];
+
 function offerField(id){return document.getElementById(id).value.trim();}
 function safeOfferUrl(value){if(!value)return "";const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error("শুধু http বা https লিংক ব্যবহার করো।");return u.href;}
 function clearOfferForm(){["offerTitle","offerImage","offerButtonText","offerDescription","offerButtonUrl"].forEach(id=>document.getElementById(id).value="");}
@@ -197,6 +207,32 @@ document.getElementById("saveOfferDraft").addEventListener("click",()=>saveOffer
 document.getElementById("publishOffer").addEventListener("click",()=>saveOffer("published"));
 document.getElementById("refreshOffers").addEventListener("click",loadOffers);
 
+function renderMembers(){
+ const q=(document.getElementById("memberSearch").value||"").toLowerCase().trim();
+ const rows=memberRecords.filter(m=>(m.name+" "+m.email+" "+m.uid).toLowerCase().includes(q));
+ memberList.innerHTML="";
+ if(!rows.length){memberList.textContent="No members found.";return;}
+ rows.forEach(m=>{
+  const row=document.createElement("div");row.className="quickrow";
+  const info=document.createElement("div");info.style.minWidth="0";
+  const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";
+  const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";
+  const uid=document.createElement("div");uid.className="fineprint";uid.textContent="UID: "+m.uid;
+  const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
+  info.append(name,email,uid,status);row.appendChild(info);memberList.appendChild(row);
+ });
+}
+async function loadMembers(){
+ memberStatus.textContent="Loading members…";
+ try{
+  const snap=await getDocs(collection(db,"members"));
+  memberRecords=snap.docs.map(d=>({uid:d.id,...d.data()}));
+  memberStatus.textContent=memberRecords.length+" member(s) found.";
+  renderMembers();
+ }catch(e){memberStatus.textContent="Could not load members: "+e.message;memberList.textContent="Check Firestore Rules and admin permissions.";}
+}
+document.getElementById("memberSearch").addEventListener("input",renderMembers);
+document.getElementById("refreshMembers").addEventListener("click",loadMembers);
 async function loadSiteSettings(){
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
@@ -253,6 +289,7 @@ async function authorize(user){
   gate.style.display="none";
   loadSiteSettings();
   loadOffers();
+  loadMembers();
  }catch(e){
   await signOut(auth);
   document.body.classList.remove("admin-authorized");
