@@ -35,12 +35,12 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
  <header class="topbar"><div class="topright"><button class="mobilemenu" onclick="toggleMenu()">☰</button><span class="crumb">Prologis, Inc. (PLD) &nbsp;/&nbsp; <b>Overview</b></span></div><div class="topright"><span class="livepill">● &nbsp; CONTROL PANEL</span><div class="avatar">A</div></div></header>
  <div class="content" id="overview">
   <div class="welcome"><div><div class="eyebrow">PROLOGIS, INC. (PLD) / ADMINISTRATION</div><h1>Your command centre</h1><p>A sharper workspace for managing your property ecosystem.</p></div><div class="datechip">✦ &nbsp; ESTATE COMMAND · 01</div></div>
-  <div class="setup"><div class="symbol">⚠</div><div><strong>Initial setup is still required</strong><p>This is the redesigned admin interface. Live records, publishing actions and member notices remain disabled until secure Firebase admin authentication, database access and Firestore rules are configured.</p></div></div>
+  <div class="setup"><div class="symbol">✓</div><div><strong>Secure admin workspace</strong><p>Admin access is verified with Firebase Authentication and the Firestore admin role. Live records and publishing controls load after successful verification.</p></div></div>
   <div class="stats">
-   <div class="stat"><div class="stathead">TOTAL MEMBERS <span class="staticon">♙</span></div><div class="statvalue">—</div><div class="statfoot">Waiting for secure database connection</div></div>
-   <div class="stat"><div class="stathead">PROPERTY LISTINGS <span class="staticon">⌂</span></div><div class="statvalue">—</div><div class="statfoot">Waiting for secure database connection</div></div>
-   <div class="stat"><div class="stathead">ACTIVE OFFERS <span class="staticon">✧</span></div><div class="statvalue">—</div><div class="statfoot">Waiting for secure database connection</div></div>
-   <div class="stat"><div class="stathead">NOTICE POSTS <span class="staticon">▤</span></div><div class="statvalue">—</div><div class="statfoot">Manage announcements in the Broadcast Centre</div></div>
+   <div class="stat"><div class="stathead">TOTAL MEMBERS <span class="staticon">♙</span></div><div class="statvalue" id="adminTotalMembers">—</div><div class="statfoot">Registered member accounts</div></div>
+   <div class="stat"><div class="stathead">PROPERTY LISTINGS <span class="staticon">⌂</span></div><div class="statvalue" id="adminPropertyCount">—</div><div class="statfoot">Published and draft listings</div></div>
+   <div class="stat"><div class="stathead">ACTIVE OFFERS <span class="staticon">✧</span></div><div class="statvalue" id="adminOfferCount">—</div><div class="statfoot">Currently published offers</div></div>
+   <div class="stat"><div class="stathead">NOTICE POSTS <span class="staticon">▤</span></div><div class="statvalue" id="adminNoticeCount">—</div><div class="statfoot">All published and saved notices</div></div>
   </div>
   <div class="sectionhead"><div><h2>Your workspace</h2><p>Every essential control, organised in one place</p></div><span class="tag">CONTROL SUITE</span></div>
   <div class="modules">
@@ -188,6 +188,24 @@ let memberRecords=[];
 const commissionStatus=document.getElementById("commissionStatus"),referralList=document.getElementById("referralList");
 const noticeStatus=document.getElementById("noticeStatus"),noticeList=document.getElementById("noticeList"),activityList=document.getElementById("activityList"),activityStatus=document.getElementById("activityStatus");
 async function writeActivity(action,details=""){try{await addDoc(collection(db,"activityLogs"),{action,details,adminUid:auth.currentUser?.uid||"",adminEmail:auth.currentUser?.email||"",createdAt:serverTimestamp()});}catch(e){console.warn("Activity log write failed:",e.message);}}
+async function loadAdminOverview(){
+ const ids=["adminTotalMembers","adminPropertyCount","adminOfferCount","adminNoticeCount"];
+ try{
+  const [members,properties,offers,notices]=await Promise.all([
+   getDocs(collection(db,"members")),
+   getDocs(collection(db,"properties")),
+   getDocs(collection(db,"offers")),
+   getDocs(collection(db,"notices"))
+  ]);
+  document.getElementById(ids[0]).textContent=String(members.size);
+  document.getElementById(ids[1]).textContent=String(properties.size);
+  document.getElementById(ids[2]).textContent=String(offers.docs.filter(d=>d.data().status==="published").length);
+  document.getElementById(ids[3]).textContent=String(notices.size);
+ }catch(e){
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="—";});
+  console.warn("Admin overview could not load:",e.message);
+ }
+}
 function messageStatus(el,msg,bad=false){if(!el)return;el.textContent=msg;el.style.color=bad?"#ffaaa5":"#91d7ad";}
 async function loadNotices(){noticeList.innerHTML='<div class="activityempty">Loading notices…</div>';try{const snap=await getDocs(collection(db,"notices"));const docs=snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0));noticeList.innerHTML="";if(!docs.length){noticeList.innerHTML='<div class="activityempty">No notices published yet.</div>';return;}docs.forEach(d=>{const n=d.data(),row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:10px;padding:12px;margin:7px 0";const title=document.createElement("strong");title.textContent=n.title||"Untitled notice";const msg=document.createElement("p");msg.style.cssText="white-space:pre-wrap;color:#91a0b3;font-size:11px;margin:6px 0";msg.textContent=n.message||"";const meta=document.createElement("div");meta.className="fineprint";meta.textContent="Audience: "+(n.audience||"all")+" · "+(n.status||"published");const del=document.createElement("button");del.className="btn";del.type="button";del.textContent="Delete";del.style.cssText="margin-top:8px;color:#ffaaa5";del.addEventListener("click",async()=>{if(!confirm("এই নোটিশটি মুছে ফেলবে?"))return;del.disabled=true;try{await deleteDoc(doc(db,"notices",d.id));await writeActivity("Deleted notice",n.title||d.id);await loadNotices();messageStatus(noticeStatus,"Notice deleted.");}catch(e){messageStatus(noticeStatus,"Delete failed: "+e.message,true);del.disabled=false;}});row.append(title,msg,meta,del);noticeList.appendChild(row);});}catch(e){noticeList.innerHTML='<div class="activityempty">Could not load notices. Check Firestore Rules.</div>';messageStatus(noticeStatus,"Notice load failed: "+e.message,true);}}
 async function loadActivity(){activityList.innerHTML='<div class="activityempty">Loading activity…</div>';try{const snap=await getDocs(collection(db,"activityLogs"));const docs=snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0)).slice(0,50);activityList.innerHTML="";if(!docs.length){activityList.innerHTML='<div class="activityempty"><b>No activity recorded yet</b>Admin actions will appear here.</div>';return;}docs.forEach(d=>{const a=d.data(),row=document.createElement("div");row.className="quickrow";const left=document.createElement("div");const strong=document.createElement("strong");strong.textContent=a.action||"Admin action";const detail=document.createElement("div");detail.className="fineprint";detail.textContent=(a.details||"")+(a.adminEmail?" · "+a.adminEmail:"");left.append(strong,detail);const date=document.createElement("span");date.textContent=a.createdAt?.toDate?a.createdAt.toDate().toLocaleString():"Just now";row.append(left,date);activityList.appendChild(row);});messageStatus(activityStatus,"Showing latest "+docs.length+" activity records.");}catch(e){activityList.innerHTML='<div class="activityempty">Could not load activity. Check Firestore Rules.</div>';messageStatus(activityStatus,"Activity load failed: "+e.message,true);}}
@@ -346,6 +364,7 @@ async function authorize(user){
   }
   document.body.classList.add("admin-authorized");
   gate.style.display="none";
+  loadAdminOverview();
   loadSiteSettings();
   loadOffers();
   loadProperties();
