@@ -156,7 +156,7 @@ body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibilit
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 const firebaseConfig = {
@@ -171,6 +171,7 @@ const ADMIN_UID = "Ry06huUzzmeqryzna9lPzpNw4Rr1";
 const ADMIN_EMAIL = "ridoyhasank5434@gmail.com";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+await setPersistence(auth, browserLocalPersistence);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const gate = document.getElementById("adminLoginGate");
@@ -354,10 +355,9 @@ async function authorize(user){
   loadNotices();
   loadActivity();
  }catch(e){
-  await signOut(auth);
   document.body.classList.remove("admin-authorized");
   gate.style.display="flex";
-  showError("Database access হয়নি। Firestore Database ও Security Rules সেটআপ যাচাই করো।");
+  showError("Admin যাচাই করা যায়নি: "+(e?.code||"")+" "+(e?.message||"Database access error"));
  }
 }
 onAuthStateChanged(auth, user => { authorize(user).catch(()=>showError("Admin verification failed. Please try again.")); });
