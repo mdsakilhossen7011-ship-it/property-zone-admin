@@ -40,7 +40,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    <div class="stat"><div class="stathead">TOTAL MEMBERS <span class="staticon">♙</span></div><div class="statvalue">—</div><div class="statfoot">Waiting for secure database connection</div></div>
    <div class="stat"><div class="stathead">PROPERTY LISTINGS <span class="staticon">⌂</span></div><div class="statvalue">—</div><div class="statfoot">Waiting for secure database connection</div></div>
    <div class="stat"><div class="stathead">ACTIVE OFFERS <span class="staticon">✧</span></div><div class="statvalue">—</div><div class="statfoot">Waiting for secure database connection</div></div>
-   <div class="stat"><div class="stathead">NOTICE POSTS <span class="staticon">▤</span></div><div class="statvalue">—</div><div class="statfoot">Notice publishing is not active</div></div>
+   <div class="stat"><div class="stathead">NOTICE POSTS <span class="staticon">▤</span></div><div class="statvalue">—</div><div class="statfoot">Manage announcements in the Broadcast Centre</div></div>
   </div>
   <div class="sectionhead"><div><h2>Your workspace</h2><p>Every essential control, organised in one place</p></div><span class="tag">CONTROL SUITE</span></div>
   <div class="modules">
@@ -51,7 +51,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    <p class="fineprint" id="memberStatus" role="status">Loading members…</p>
    <div id="memberList" class="quicklist"></div>
   </section>
-   <article class="module" id="properties"><div class="moduleicon">⌂</div><div><h3>Property Moderation</h3><p>Review submitted properties and approve or reject listings.</p><span class="state">DATABASE SETUP PENDING</span></div></article><section class="panel" id="propertyManager" style="grid-column:1/-1;margin-top:4px">
+   <article class="module" id="properties"><div class="moduleicon">⌂</div><div><h3>Property Moderation</h3><p>Review submitted properties and approve or reject listings.</p><span class="state">FIRESTORE CONNECTED</span></div></article><section class="panel" id="propertyManager" style="grid-column:1/-1;margin-top:4px">
  <div class="eyebrow">PROPERTY LISTING MANAGER</div><h2>Add & Manage Properties</h2><p class="desc">Add verified property information here. Published listings appear on the public Property Zone website.</p>
  <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
   <div><label class="field" for="propertyTitle">PROPERTY NAME *</label><input class="control" id="propertyTitle" maxlength="100" placeholder="e.g. Modern family apartment">
@@ -103,7 +103,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
     </div>
    </div>
    <button class="send" id="saveSiteSettings" type="button" style="cursor:pointer;opacity:1">Save Website Settings</button>
-   <p class="fineprint" id="settingsStatus" role="status">Logo and favicon are currently set by image URL. Direct file upload and applying these settings to the public website will be connected in a later step.</p>
+   <p class="fineprint" id="settingsStatus" role="status">Logo and favicon URL changes are applied to the public website after refresh. Direct file upload is not enabled.</p>
   </section>
   <div class="lower">
    <section class="panel" id="notices"><div class="eyebrow">MEMBER COMMUNICATION</div><h2>Broadcast centre</h2><p class="desc">Compose an announcement for the Property Zone community.</p>
