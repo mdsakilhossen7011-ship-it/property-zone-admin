@@ -256,12 +256,35 @@ const sampleRows=[
 ["Premium Residence Concept","Gulshan, Dhaka","Apartment","৳3,20,00,000","photo-1600607687644-c7171b42498f","Premium residential concept with spacious rooms and refined finishes."],
 ["Suburban Residential Land","Savar, Dhaka","Land","৳38,00,000","photo-1500382017468-9049fed747ef","Example land card for website presentation; exact location and measurement are not verified."]
 ];
+async function addSampleListings(automatic=false){
+ const b=document.getElementById("addSampleProperties");
+ if(b){b.disabled=true;b.textContent="Adding…";}
+ try{
+  const snap=await getDocs(collection(db,"properties"));
+  const names=new Set(snap.docs.filter(d=>d.data().isSample===true).map(d=>d.data().title));
+  let n=0;
+  for(const r of sampleRows){
+   if(names.has(r[0]))continue;
+   await addDoc(collection(db,"properties"),{
+    title:r[0],location:r[1],type:r[2],price:r[3],
+    imageUrl:"https://images.unsplash.com/"+r[4]+"?auto=format&fit=crop&w=1200&q=85",
+    description:"SAMPLE LISTING — "+r[5]+" Fictional illustrative content; this is not a verified property offer.",
+    availability:"Available",status:"published",isSample:true,
+    createdAt:serverTimestamp(),updatedAt:serverTimestamp(),createdBy:auth.currentUser?.uid||""
+   });
+   n++;
+  }
+  propertyMessage(n?n+" sample listings published.":"Sample listings already exist.");
+  await loadAdminOverview();
+ }catch(e){
+  propertyMessage("Sample listings যোগ হয়নি: "+(e.code||"")+" "+e.message,true);
+ }finally{
+  if(b){b.disabled=false;b.textContent="Add 10 sample listings";}
+ }
+}
 document.getElementById("addSampleProperties").addEventListener("click",async()=>{
- const b=document.getElementById("addSampleProperties");b.disabled=true;b.textContent="Adding…";
- try{const snap=await getDocs(collection(db,"properties"));const names=new Set(snap.docs.filter(d=>d.data().isSample===true).map(d=>d.data().title));let n=0;
- for(const r of sampleRows){if(names.has(r[0]))continue;await addDoc(collection(db,"properties"),{title:r[0],location:r[1],type:r[2],price:r[3],imageUrl:"https://images.unsplash.com/"+r[4]+"?auto=format&fit=crop&w=1200&q=85",description:"SAMPLE LISTING — "+r[5]+" Fictional illustrative content; this is not a verified property offer.",availability:"Available",status:"published",isSample:true,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),createdBy:auth.currentUser?.uid||""});n++;}
- propertyMessage(n?n+" sample listings published.":"All sample listings already exist.");await loadProperties();await loadAdminOverview();
- }catch(e){propertyMessage("Could not add samples: "+e.message,true);}finally{b.disabled=false;b.textContent="Add 10 sample listings";}
+ await addSampleListings(false);
+ await loadProperties();
 });
 document.getElementById("deleteSampleProperties").addEventListener("click",async()=>{
  if(!confirm("Delete all sample listings only? Other properties will remain."))return;
@@ -402,6 +425,8 @@ async function authorize(user){
   loadAdminOverview();
   loadSiteSettings();
   loadOffers();
+  // Seed clearly labelled demo listings once; never overwrite real property records.
+  await addSampleListings(true);
   loadProperties();
   loadCommunicationInbox();
   loadMembers();
