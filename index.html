@@ -219,7 +219,7 @@ async function loadReferrals(){
  try{
   const [ms,ss]=await Promise.all([getDocs(collection(db,"members")),getDoc(doc(db,"referralSettings","general"))]);
   const members=ms.docs.map(d=>({uid:d.id,...d.data()}));
-  await Promise.all(members.map(async member=>{const code=String(member.referralCode||"").trim().toUpperCase();if(!code)return;try{const codeRef=doc(db,"referralCodes",code),codeSnap=await getDoc(codeRef);if(!codeSnap.exists())await setDoc(codeRef,{code,active:true,createdAt:member.createdAt||serverTimestamp()});}catch(codeError){console.warn("Referral code migration skipped:",codeError.message);}}));
+  await Promise.all(members.map(async member=>{const code=String(member.referralCode||"").trim().toUpperCase();if(!code)return;try{const codeRef=doc(db,"referralCodes",code),codeSnap=await getDoc(codeRef);await setDoc(codeRef,{code,active:member.status==="active",createdAt:codeSnap.exists()?(codeSnap.data().createdAt||member.createdAt||serverTimestamp()):(member.createdAt||serverTimestamp()),updatedAt:serverTimestamp()},{merge:true});}catch(codeError){console.warn("Referral code sync skipped:",codeError.message);}}));
   if(ss.exists())document.getElementById("commissionRate").value=Number(ss.data().rate??10);
   const validCodes=new Set(members.map(x=>String(x.referralCode||"").trim().toUpperCase()).filter(Boolean));
   const referred=members.filter(x=>validCodes.has(String(x.referredByCode||"").trim().toUpperCase()));
@@ -303,7 +303,7 @@ function renderMembers(){
   const uid=document.createElement("div");uid.className="fineprint";uid.textContent="UID: "+m.uid;
   const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
   const action=document.createElement("button");action.className="btn";action.type="button";action.textContent=m.status==="active"?"Deactivate":"Activate";
-  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadReferrals();await loadActivity();await loadAdminOverview();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
+  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});const code=String(m.referralCode||"").trim().toUpperCase();if(code){await setDoc(doc(db,"referralCodes",code),{code,active:next==="active",updatedAt:serverTimestamp()},{merge:true});}await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadReferrals();await loadActivity();await loadAdminOverview();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
   info.append(name,email,uid,status);row.append(info,action);memberList.appendChild(row);
  });
 }
