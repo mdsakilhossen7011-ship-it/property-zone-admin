@@ -129,7 +129,7 @@ function toggleMenu(){document.getElementById('sidebar').classList.toggle('open'
 </script>
 
 <style>
-#adminLoginGate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 0%,#1c2a3c,#080b10 68%)}
+#adminLoginGate{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 0%,#1c2a3c,#080b10 68%)}
 #adminLoginGate .loginbox{width:min(100%,410px);border:1px solid #3b4655;border-radius:18px;padding:28px;background:#101722;box-shadow:0 25px 90px #0009}
 #adminLoginGate .loginbrand{color:#ffe2a0;font-weight:900;letter-spacing:1.5px;font-size:13px}
 #adminLoginGate h1{font-size:25px;margin:17px 0 5px}
@@ -405,58 +405,79 @@ settingsButton.addEventListener("click",async()=>{
  }finally{settingsButton.disabled=false;settingsButton.textContent="Save Website Settings";}
 });
 function showError(message){ errorBox.textContent = message; }
+let authorizedUid=null;
+let authQueue=Promise.resolve();
+function queueAuthorization(user){
+ authQueue=authQueue.then(()=>authorize(user)).catch(e=>{
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  showError("Admin যাচাই করা যায়নি: "+(e?.code||"")+" "+(e?.message||"Please try again."));
+ });
+ return authQueue;
+}
 async function authorize(user){
- if(!user){ document.body.classList.remove("admin-authorized"); gate.style.display="flex"; return; }
+ if(!user){
+  authorizedUid=null;
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  return;
+ }
  if(user.uid !== ADMIN_UID || user.email !== ADMIN_EMAIL || !user.emailVerified){
   await signOut(auth);
+  authorizedUid=null;
   document.body.classList.remove("admin-authorized");
   gate.style.display="flex";
   showError("এই অ্যাকাউন্টটি অনুমোদিত Admin নয় অথবা ইমেইল Verify করা হয়নি।");
   return;
  }
- try{
-  const adminSnap = await getDoc(doc(db,"admins",user.uid));
-  if(!adminSnap.exists() || adminSnap.data().role !== "admin" || adminSnap.data().active !== true){
-   await signOut(auth);
-   document.body.classList.remove("admin-authorized");
-   gate.style.display="flex";
-   showError("Admin permission এখনো সক্রিয় হয়নি। Firebase Firestore-এ admins/"+user.uid+" ডকুমেন্ট তৈরি করতে হবে।");
-   return;
-  }
-  document.body.classList.add("admin-authorized");
-  gate.style.display="none";
-  loadAdminOverview();
-  loadSiteSettings();
-  loadOffers();
-  // Seed clearly labelled demo listings once; never overwrite real property records.
-  await addSampleListings(true);
-  loadProperties();
-  loadCommunicationInbox();
-  loadMembers();
-  loadReferrals();
-  loadNotices();
-  loadActivity();
- }catch(e){
+ if(authorizedUid===user.uid && document.body.classList.contains("admin-authorized"))return;
+ const adminSnap=await getDoc(doc(db,"admins",user.uid));
+ if(!adminSnap.exists() || adminSnap.data().role!=="admin" || adminSnap.data().active!==true){
+  await signOut(auth);
+  authorizedUid=null;
   document.body.classList.remove("admin-authorized");
   gate.style.display="flex";
-  showError("Admin যাচাই করা যায়নি: "+(e?.code||"")+" "+(e?.message||"Database access error"));
+  showError("Admin permission এখনো সক্রিয় হয়নি। Firebase Firestore-এ admins/"+user.uid+" ডকুমেন্ট তৈরি করতে হবে।");
+  return;
  }
+ authorizedUid=user.uid;
+ document.body.classList.add("admin-authorized");
+ gate.style.display="none";
+ loadAdminOverview();
+ loadSiteSettings();
+ loadOffers();
+ await addSampleListings(true);
+ loadProperties();
+ loadCommunicationInbox();
+ loadMembers();
+ loadReferrals();
+ loadNotices();
+ loadActivity();
 }
-onAuthStateChanged(auth, user => { authorize(user).catch(()=>showError("Admin verification failed. Please try again.")); });
-form.addEventListener("submit", async event=>{
- event.preventDefault(); showError(""); loginButton.disabled=true; loginButton.textContent="Verifying...";
+onAuthStateChanged(auth,user=>{queueAuthorization(user);});
+form.addEventListener("submit",async event=>{
+ event.preventDefault();
+ showError("");
+ loginButton.disabled=true;
+ loginButton.textContent="Verifying...";
  try{
-  const credential = await signInWithEmailAndPassword(auth,ADMIN_EMAIL,document.getElementById("adminPassword").value);
-  if(!credential.user.emailVerified) showError("আগে ইমেইল Verify করো।");
+  const credential=await signInWithEmailAndPassword(auth,ADMIN_EMAIL,document.getElementById("adminPassword").value);
+  if(!credential.user.emailVerified){
+   showError("আগে ইমেইল Verify করো।");
+   await signOut(auth);
+  }else{
+   await queueAuthorization(credential.user);
+  }
  }catch(e){
   const messages={
    "auth/invalid-credential":"ইমেইল বা পাসওয়ার্ড সঠিক নয়।",
    "auth/too-many-requests":"অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করো।",
    "auth/network-request-failed":"ইন্টারনেট সংযোগ পরীক্ষা করো।"
   };
-  showError(messages[e.code] || "Login হয়নি: "+e.message);
+  showError(messages[e.code]||"Login হয়নি: "+e.message);
  }finally{
-  loginButton.disabled=false; loginButton.textContent="Secure Login";
+  loginButton.disabled=false;
+  loginButton.textContent="Secure Login";
  }
 });
 </script>
