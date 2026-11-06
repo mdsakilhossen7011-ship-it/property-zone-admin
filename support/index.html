@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1118">
+<title>Property Zone Support Desk</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1118;--panel:#131d29;--panel2:#192635;--line:#29394b;--gold:#e2bd70;--muted:#94a3b5;--white:#f5f7fb;--green:#8bd5ad}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--white);font:14px/1.5 Inter,system-ui,Arial}button,input,textarea{font:inherit}.hidden{display:none!important}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 0%,#24384d 0,#0b1118 60%)}.login-card{width:min(420px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 24px 70px #0008}.brand{color:var(--gold);font-weight:900;letter-spacing:1.5px;font-size:12px}.login-card h1{font-size:27px;margin:10px 0 5px}.muted{color:var(--muted)}label{display:block;color:#c2ccd8;font-size:11px;font-weight:800;letter-spacing:.8px;margin:17px 0 7px}input,textarea{width:100%;background:#0c131c;color:var(--white);border:1px solid #344558;border-radius:10px;padding:12px;outline:none}input:focus,textarea:focus{border-color:var(--gold)}button{border:0;border-radius:10px;padding:12px 15px;background:linear-gradient(135deg,#edcf8b,#b1843b);color:#19140a;font-weight:850;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}.primary{width:100%;margin-top:18px}.error{color:#ffaaa5;min-height:20px;font-size:12px}
+.app{height:100dvh;display:grid;grid-template-columns:330px minmax(0,1fr);max-width:1500px;margin:auto}.sidebar{border-right:1px solid var(--line);background:#101923;display:flex;flex-direction:column;min-height:0}.sidehead{padding:20px;border-bottom:1px solid var(--line)}.sidehead h2{margin:4px 0;font-size:19px}.adminline{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.toolbar{display:flex;gap:8px;margin-top:14px}.toolbar button{font-size:11px;padding:8px 10px}.toolbar .secondary{background:#253548;color:#dce5ef}.chatlist{overflow:auto;padding:10px;flex:1}.chatitem{display:block;width:100%;text-align:left;background:transparent;color:var(--white);border:1px solid transparent;border-radius:11px;padding:12px;margin:3px 0}.chatitem:hover,.chatitem.active{background:#1b2a3a;border-color:#344b62}.chatname{display:flex;justify-content:space-between;gap:8px;font-weight:800}.chatpreview{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.chatdate{font-size:9px;color:#8191a3;font-weight:500;white-space:nowrap}.empty{padding:22px;text-align:center;color:var(--muted);font-size:12px}
+.chatpane{min-width:0;display:flex;flex-direction:column;min-height:0}.chathead{padding:17px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;background:#101923}.chathead h2{margin:0;font-size:16px}.chathead p{margin:3px 0 0;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.messages{padding:22px;display:flex;flex-direction:column;gap:10px;overflow:auto;flex:1;background:radial-gradient(ellipse at 50% 0%,#162333 0,#0b1118 70%)}.bubble{max-width:min(78%,620px);padding:11px 13px;border-radius:13px;font-size:13px;overflow-wrap:anywhere;white-space:pre-wrap}.bubble.user{align-self:flex-start;background:#1c2b3b;border:1px solid #31465b;border-bottom-left-radius:4px}.bubble.admin{align-self:flex-end;background:#3a2d19;border:1px solid #6b512a;border-bottom-right-radius:4px}.bubble small{display:block;margin-top:6px;color:#a9b5c2;font-size:9px}.composer{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:10px;background:#101923}.composer textarea{resize:none;min-height:46px;max-height:120px;flex:1}.composer button{align-self:flex-end;min-width:82px}.status{padding:0 18px 9px;background:#101923;color:var(--muted);font-size:11px}
+@media(max-width:720px){.app{grid-template-columns:1fr;grid-template-rows:42vh minmax(0,1fr)}.sidebar{border-right:0;border-bottom:1px solid var(--line)}.sidehead{padding:12px 15px}.sidehead h2{font-size:16px}.toolbar{margin-top:8px}.chatlist{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;padding:8px}.chatitem{min-width:190px;max-width:220px;align-self:flex-start}.chathead{padding:11px 14px}.messages{padding:14px}.composer{padding:10px}.bubble{max-width:88%}}
+</style>
+</head>
+<body>
+<div id="login" class="login-wrap"><form id="loginForm" class="login-card"><div class="brand">PROPERTY ZONE · SUPPORT DESK</div><h1>Admin sign in</h1><p class="muted">Sign in using your authorized admin email and password.</p><label for="email">ADMIN EMAIL</label><input id="email" type="email" autocomplete="username" required placeholder="admin@example.com"><label for="password">PASSWORD</label><input id="password" type="password" autocomplete="current-password" required placeholder="Your password"><button class="primary" id="loginBtn">Secure Login</button><p class="error" id="loginError" role="alert"></p></form></div>
+<div id="app" class="app hidden"><aside class="sidebar"><div class="sidehead"><div class="brand">PROPERTY ZONE · SUPPORT</div><h2>Live conversations</h2><div class="adminline" id="adminEmail"></div><div class="toolbar"><button class="secondary" id="refreshBtn">Refresh</button><button class="secondary" id="logoutBtn">Sign out</button></div></div><div class="chatlist" id="chatList"><div class="empty">Loading conversations…</div></div></aside><main class="chatpane"><header class="chathead"><div><h2 id="chatTitle">Select a conversation</h2><p id="chatSubtitle">Messages from website members will appear here.</p></div><span class="brand">● ONLINE</span></header><div class="messages" id="messages"><div class="empty">Choose a member from the list to open the chat.</div></div><form class="composer" id="replyForm"><textarea id="replyText" maxlength="2000" rows="2" placeholder="Write your reply…" required disabled></textarea><button id="sendBtn" disabled>Send</button></form><div class="status" id="chatStatus" role="status">Support desk ready.</div></main></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,setPersistence,browserLocalPersistence} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import {getFirestore,doc,getDoc,collection,query,orderBy,onSnapshot,addDoc,updateDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyDRLWFf4ISfQdoZp7JaQAWwwKCoL_aV6No",authDomain:"property-zone-17121.firebaseapp.com",projectId:"property-zone-17121",storageBucket:"property-zone-17121.firebasestorage.app",messagingSenderId:"631227640032",appId:"1:631227640032:web:855536883072ccfe3b8885"};
+const appFirebase=initializeApp(firebaseConfig),auth=getAuth(appFirebase),db=getFirestore(appFirebase);
+await setPersistence(auth,browserLocalPersistence);
+const $=id=>document.getElementById(id);
+let inboxUnsub=null,messageUnsub=null,activeChat=null,activeInfo=null;
+const show=(id,yes)=>$(id).classList.toggle("hidden",!yes);
+function status(msg,bad=false){$("chatStatus").textContent=msg;$("chatStatus").style.color=bad?"#ffaaa5":"#94a3b5";}
+function stopListeners(){if(inboxUnsub)inboxUnsub();if(messageUnsub)messageUnsub();inboxUnsub=null;messageUnsub=null;}
+function dateLabel(value){try{const d=value?.toDate?value.toDate():null;return d?d.toLocaleString():"";}catch{return "";}}
+function startInbox(){
+ if(inboxUnsub)inboxUnsub();
+ inboxUnsub=onSnapshot(query(collection(db,"supportChats"),orderBy("updatedAt","desc")),snap=>{
+  const list=$("chatList");list.innerHTML="";
+  if(snap.empty){list.innerHTML='<div class="empty">No member messages yet.</div>';return;}
+  snap.forEach(item=>{
+   const x=item.data(),btn=document.createElement("button");btn.type="button";btn.className="chatitem"+(activeChat===item.id?" active":"");
+   const top=document.createElement("span");top.className="chatname";
+   const name=document.createElement("span");name.textContent=x.name||x.email||"Member";
+   const date=document.createElement("span");date.className="chatdate";date.textContent=dateLabel(x.updatedAt);
+   top.append(name,date);
+   const preview=document.createElement("span");preview.className="chatpreview";preview.textContent=x.lastMessage||"No messages yet";
+   btn.append(top,preview);btn.addEventListener("click",()=>openChat(item.id,x));list.append(btn);
+  });
+ },e=>{$("chatList").textContent="Could not load chats: "+e.message;});
+}
+function openChat(id,info){
+ activeChat=id;activeInfo=info;
+ $("chatTitle").textContent=info.name||"Member";
+ $("chatSubtitle").textContent=(info.email||"")+ " · "+id;
+ $("replyText").disabled=false;$("sendBtn").disabled=false;
+ document.querySelectorAll(".chatitem").forEach(b=>b.classList.remove("active"));
+ const found=[...document.querySelectorAll(".chatitem")].find(b=>b.querySelector(".chatname span")?.textContent===(info.name||info.email||"Member"));if(found)found.classList.add("active");
+ if(messageUnsub)messageUnsub();
+ $("messages").innerHTML='<div class="empty">Loading messages…</div>';
+ messageUnsub=onSnapshot(query(collection(db,"supportChats",id,"messages"),orderBy("createdAt","asc")),snap=>{
+  const box=$("messages");box.innerHTML="";
+  if(snap.empty){box.innerHTML='<div class="empty">No messages yet. Send the first reply.</div>';return;}
+  snap.forEach(mdoc=>{
+   const m=mdoc.data(),bubble=document.createElement("div");bubble.className="bubble "+(m.senderRole==="admin"?"admin":"user");
+   const body=document.createElement("div");body.textContent=m.text||"";const meta=document.createElement("small");meta.textContent=(m.senderRole==="admin"?"Admin":"Member")+" · "+dateLabel(m.createdAt);
+   bubble.append(body,meta);box.append(bubble);
+  });box.scrollTop=box.scrollHeight;
+ },e=>status("Could not load messages: "+e.message,true));
+}
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();$("loginError").textContent="";$("loginBtn").disabled=true;$("loginBtn").textContent="Checking…";
+ try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}
+ catch(err){$("loginError").textContent=err.message||"Login failed.";}
+ finally{$("loginBtn").disabled=false;$("loginBtn").textContent="Secure Login";}
+});
+onAuthStateChanged(auth,async user=>{
+ stopListeners();
+ if(!user){show("login",true);show("app",false);return;}
+ try{
+  const snap=await getDoc(doc(db,"admins",user.uid)),data=snap.exists()?snap.data():{};
+  if(!user.emailVerified||!snap.exists()||data.role!=="admin"||data.active!==true){
+   await signOut(auth);$("loginError").textContent="This account is not an active, verified admin. Ask the site owner to authorize it.";return;
+  }
+  $("adminEmail").textContent=user.email||user.uid;show("login",false);show("app",true);startInbox();
+ }catch(err){await signOut(auth);show("login",true);$("loginError").textContent="Admin check failed: "+err.message;}
+});
+$("refreshBtn").addEventListener("click",()=>{startInbox();status("Conversation list refreshed.");});
+$("logoutBtn").addEventListener("click",()=>signOut(auth));
+$("replyForm").addEventListener("submit",async e=>{
+ e.preventDefault();const text=$("replyText").value.trim();if(!activeChat||!text)return;
+ $("sendBtn").disabled=true;
+ try{
+  await addDoc(collection(db,"supportChats",activeChat,"messages"),{senderUid:auth.currentUser.uid,senderRole:"admin",text,createdAt:serverTimestamp()});
+  await updateDoc(doc(db,"supportChats",activeChat),{lastMessage:text,updatedAt:serverTimestamp(),status:"open"});
+  $("replyText").value="";status("Reply sent.");
+ }catch(err){status("Could not send reply: "+err.message,true);}
+ finally{$("sendBtn").disabled=false;}
+});
+</script>
+</body></html>
