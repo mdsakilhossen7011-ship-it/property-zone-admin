@@ -99,22 +99,47 @@ async function verifyAndOpen(user){
  }
  finally{verificationPromise=null;verificationUid=null;}
 }
+let loginInProgress=false;
 $("loginForm").addEventListener("submit",async e=>{
  e.preventDefault();
- $("loginError").textContent="";$("loginBtn").disabled=true;$("loginBtn").textContent="Connecting…";
+ if(loginInProgress)return;
+ loginInProgress=true;
+ const emailValue=$("email").value.trim();
+ const passwordValue=$("password").value;
+ $("loginError").textContent="";
+ $("loginBtn").disabled=true;
+ $("loginBtn").textContent="Connecting…";
  try{
   let user=auth.currentUser;
   if(!user){
    let lastError=null;
    for(let attempt=0;attempt<3;attempt++){
-    try{const credential=await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);user=credential.user;lastError=null;break;}
-    catch(err){lastError=err;if(!temporaryError(err)||attempt===2)throw err; $("loginBtn").textContent="Retrying connection…";await wait(800*(attempt+1));}
+    try{
+     const credential=await signInWithEmailAndPassword(auth,emailValue,passwordValue);
+     user=credential.user;lastError=null;break;
+    }catch(err){
+     lastError=err;
+     if(!temporaryError(err)||attempt===2)throw err;
+     $("loginBtn").textContent="Connection retry "+(attempt+1)+"/2…";
+     await wait(1000*(attempt+1));
+    }
    }
    if(lastError)throw lastError;
   }
   if(user)await verifyAndOpen(user);
- }catch(err){$("loginError").textContent=err.message||"Login failed.";}
- finally{$("loginBtn").disabled=false;$("loginBtn").textContent="Secure Login";}
+ }catch(err){
+  $("email").value=emailValue;
+  $("password").value=passwordValue;
+  $("loginError").textContent=err.message||"Login failed. Your details are still in the fields; try again.";
+ }finally{
+  if(!auth.currentUser){
+   $("email").value=emailValue;
+   $("password").value=passwordValue;
+  }
+  $("loginBtn").disabled=false;
+  $("loginBtn").textContent="Secure Login";
+  loginInProgress=false;
+ }
 });
 onAuthStateChanged(auth,user=>{
  stopListeners();
