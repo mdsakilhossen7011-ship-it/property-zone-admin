@@ -64,22 +64,62 @@ function openChat(id,info){
   });box.scrollTop=box.scrollHeight;
  },e=>status("Could not load messages: "+e.message,true));
 }
+let verificationPromise=null,verificationUid=null;
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function temporaryError(err){
+ const code=err?.code||"";
+ return code==="auth/network-request-failed"||code==="auth/internal-error"||
+ code==="unavailable"||code==="deadline-exceeded"||code==="firestore/unavailable"||
+ code==="network-request-failed";
+}
+async function verifyAndOpen(user){
+ if(verificationPromise&&verificationUid===user.uid)return verificationPromise;
+ verificationUid=user.uid;
+ verificationPromise=(async()=>{
+  let snap=null,lastError=null;
+  for(let attempt=0;attempt<3;attempt++){
+   try{snap=await getDoc(doc(db,"admins",user.uid));lastError=null;break;}
+   catch(err){lastError=err;if(!temporaryError(err)||attempt===2)throw err;await wait(700*(attempt+1));}
+  }
+  if(lastError||!snap)throw lastError||new Error("Admin check could not be completed.");
+  const data=snap.exists()?snap.data():{};
+  if(!user.emailVerified||!snap.exists()||data.role!=="admin"||data.active!==true){
+   await signOut(auth);
+   $("loginError").textContent="This account is not an active, verified admin. Ask the site owner to authorize it.";
+   return;
+  }
+  $("loginError").textContent="";
+  $("adminEmail").textContent=user.email||user.uid;
+  show("login",false);show("app",true);startInbox();
+ })();
+ try{return await verificationPromise;}
+ catch(err){
+  show("login",true);show("app",false);
+  $("loginError").textContent="Connection problem while checking admin access. Press Secure Login again; you will not need to enter your password again if you are already signed in.";
+ }
+ finally{verificationPromise=null;verificationUid=null;}
+}
 $("loginForm").addEventListener("submit",async e=>{
- e.preventDefault();$("loginError").textContent="";$("loginBtn").disabled=true;$("loginBtn").textContent="Checking…";
- try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}
- catch(err){$("loginError").textContent=err.message||"Login failed.";}
+ e.preventDefault();
+ $("loginError").textContent="";$("loginBtn").disabled=true;$("loginBtn").textContent="Connecting…";
+ try{
+  let user=auth.currentUser;
+  if(!user){
+   let lastError=null;
+   for(let attempt=0;attempt<3;attempt++){
+    try{const credential=await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);user=credential.user;lastError=null;break;}
+    catch(err){lastError=err;if(!temporaryError(err)||attempt===2)throw err; $("loginBtn").textContent="Retrying connection…";await wait(800*(attempt+1));}
+   }
+   if(lastError)throw lastError;
+  }
+  if(user)await verifyAndOpen(user);
+ }catch(err){$("loginError").textContent=err.message||"Login failed.";}
  finally{$("loginBtn").disabled=false;$("loginBtn").textContent="Secure Login";}
 });
-onAuthStateChanged(auth,async user=>{
+onAuthStateChanged(auth,user=>{
  stopListeners();
  if(!user){show("login",true);show("app",false);return;}
- try{
-  const snap=await getDoc(doc(db,"admins",user.uid)),data=snap.exists()?snap.data():{};
-  if(!user.emailVerified||!snap.exists()||data.role!=="admin"||data.active!==true){
-   await signOut(auth);$("loginError").textContent="This account is not an active, verified admin. Ask the site owner to authorize it.";return;
-  }
-  $("adminEmail").textContent=user.email||user.uid;show("login",false);show("app",true);startInbox();
- }catch(err){await signOut(auth);show("login",true);$("loginError").textContent="Admin check failed: "+err.message;}
+ verifyAndOpen(user);
 });
 $("refreshBtn").addEventListener("click",()=>{startInbox();status("Conversation list refreshed.");});
 $("logoutBtn").addEventListener("click",()=>signOut(auth));
