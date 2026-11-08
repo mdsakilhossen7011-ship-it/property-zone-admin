@@ -477,36 +477,42 @@ async function processMaturedPackages(){
  finally{if(button){button.disabled=false;button.textContent="Process 30-Day Packages";}}
 }
 async function reviewWalletRequest(item,status,button){
- button.disabled=true;button.textContent=status==="approved"?"Approving…":"Rejecting…";
+ button.disabled=true;button.textContent=status==="success"?"Approving…":"Rejecting…";
  try{
-  const requestRef=doc(db,"propertyEnquiries",item.id),walletRef=doc(db,"wallets",item.uid);
+  const requestRef=doc(db,"propertyEnquiries",item.id),walletRef=doc(db,"wallets",item.uid),settingsRef=doc(db,"siteSettings","wallet");
   await runTransaction(db,async tx=>{
    const requestSnap=await tx.get(requestRef);
    if(!requestSnap.exists())throw new Error("Request no longer exists.");
    const current=requestSnap.data();
-   if(current.status!=="open")throw new Error("This request has already been reviewed.");
+   if(!["open","pending"].includes(current.status))throw new Error("This request has already been reviewed.");
    const walletSnap=await tx.get(walletRef);
-   if(status==="approved"){
+   if(status==="success"){
     const amount=Number(current.amountUSD||0);
-    if(!Number.isFinite(amount)||amount<=0)throw new Error("Invalid request amount.");
+    if(!Number.isFinite(amount)||amount<=0)throw new Error("Invalid USD amount.");
+    if(current.requestType==="wallet-withdraw"){
+     if(!Number.isSafeInteger(Number(current.amountBDT))||!Number.isFinite(Number(current.exchangeRateBDT)))throw new Error("Legacy withdrawal has no verified BDT conversion. Reject it and ask the member to submit again.");
+     const settingSnap=await tx.get(settingsRef),settings=settingSnap.exists()?settingSnap.data():{},minimum=Math.max(500,Number(settings.minimumWithdrawBDT||500));
+     if(Number(current.amountBDT)<minimum)throw new Error("Request is below the current minimum withdrawal.");
+     if(Number(current.exchangeRateBDT)!==Number(settings.exchangeRateBDT))throw new Error("Exchange rate changed after this request. Reject and ask the member to submit again.");
+    }
     const balance=walletSnap.exists()?Number(walletSnap.data().balanceUSD||0):0;
-    if(current.requestType==="wallet-withdraw"&&balance<amount)throw new Error("Insufficient wallet balance for this withdrawal.");
+    if(current.requestType==="wallet-withdraw"&&balance+0.000001<amount)throw new Error("Insufficient wallet balance for this withdrawal.");
     const nextBalance=current.requestType==="wallet-deposit"?balance+amount:balance-amount;
-    if(walletSnap.exists())tx.update(walletRef,{balanceUSD:nextBalance,updatedAt:serverTimestamp()});
-    else tx.set(walletRef,{uid:current.uid,balanceUSD:nextBalance,updatedAt:serverTimestamp(),createdAt:serverTimestamp()});
+    if(walletSnap.exists())tx.update(walletRef,{balanceUSD:Math.round(nextBalance*100)/100,updatedAt:serverTimestamp()});
+    else tx.set(walletRef,{uid:current.uid,balanceUSD:Math.round(nextBalance*100)/100,updatedAt:serverTimestamp(),createdAt:serverTimestamp()});
    }
    tx.update(requestRef,{status,reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser?.uid||"",reviewedByEmail:auth.currentUser?.email||""});
   });
-  await writeActivity((status==="approved"?"Approved and credited/debited ":"Rejected ")+(item.requestType==="wallet-deposit"?"deposit":"withdrawal")+" request",item.email||item.id);
+  await writeActivity((status==="success"?"Marked successful ":"Rejected ")+(item.requestType==="wallet-deposit"?"deposit":"withdrawal")+" request",item.email||item.id);
   await loadWalletRequests();await loadActivity();
- }catch(e){walletAdminMessage("Could not review request: "+e.message,true);button.disabled=false;button.textContent=status==="approved"?"Approve":"Reject";}
+ }catch(e){walletAdminMessage("Could not review request: "+e.message,true);button.disabled=false;button.textContent=status==="success"?"Approve":"Reject";}
 }
 async function loadWalletRequests(){
  const target=document.getElementById("walletRequestList");target.innerHTML='<div class="activityempty">Loading wallet requests…</div>';
  try{const snap=await getDocs(collection(db,"propertyEnquiries"));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.requestType==="wallet-deposit"||x.requestType==="wallet-withdraw").sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));target.innerHTML="";
   if(!rows.length){target.innerHTML='<div class="activityempty">No deposit or withdrawal requests yet.</div>';return;}
-  rows.forEach(item=>{const row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:13px;margin:8px 0;background:#0d131c";const title=document.createElement("strong");title.textContent=(item.requestType==="wallet-deposit"?"DEPOSIT":"WITHDRAW")+" · "+(item.name||item.email||"Member")+" · $"+Number(item.amountUSD||0).toFixed(2);const detail=document.createElement("p");detail.style.cssText="white-space:pre-wrap;color:#aab6c6;font-size:12px";detail.textContent="Email: "+(item.email||"—")+"\nMethod: "+(item.paymentMethod||"—")+"\nMember account: "+(item.walletNumber||item.paymentAccount||"—")+"\nDeposit to: "+(item.receivingAccount||"—")+"\nPayout info: "+(item.adminPayoutAccount||"—")+"\nTransaction ID: "+(item.transactionId||"Not applicable")+"\nStatus: "+(item.status||"open");row.append(title,detail);
-   if(item.status==="open"){const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";const approve=document.createElement("button");approve.className="btn";approve.type="button";approve.textContent="Approve";approve.addEventListener("click",()=>reviewWalletRequest(item,"approved",approve));const reject=document.createElement("button");reject.className="btn";reject.type="button";reject.textContent="Reject";reject.addEventListener("click",()=>reviewWalletRequest(item,"rejected",reject));actions.append(approve,reject);row.appendChild(actions);}target.appendChild(row);
+  rows.forEach(item=>{const row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:13px;margin:8px 0;background:#0d131c";const title=document.createElement("strong");title.textContent=(item.requestType==="wallet-deposit"?"DEPOSIT":"WITHDRAW")+" · "+(item.name||item.email||"Member")+(item.amountBDT?" · ৳"+Number(item.amountBDT).toLocaleString("en-US"):" · LEGACY")+" · $"+Number(item.amountUSD||0).toFixed(2);const detail=document.createElement("p");detail.style.cssText="white-space:pre-wrap;color:#aab6c6;font-size:12px";detail.textContent="Email: "+(item.email||"—")+"\nMethod: "+(item.paymentMethod||"—")+"\nMember account: "+(item.walletNumber||item.paymentAccount||"—")+"\nDeposit to: "+(item.receivingAccount||"—")+"\nPayout info: "+(item.adminPayoutAccount||"—")+"\nTransaction ID: "+(item.transactionId||"Not applicable")+"\nExchange rate: "+(item.exchangeRateBDT?"৳"+item.exchangeRateBDT+" per USD":"Not recorded")+"\nStatus: "+((item.status==="open"||item.status==="pending")?"Pending":item.status==="success"||item.status==="approved"?"Success":item.status||"Pending");row.append(title,detail);
+   if(item.status==="open"||item.status==="pending"){const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";const approve=document.createElement("button");approve.className="btn";approve.type="button";approve.textContent="Approve";approve.addEventListener("click",()=>reviewWalletRequest(item,"success",approve));const reject=document.createElement("button");reject.className="btn";reject.type="button";reject.textContent="Reject";reject.addEventListener("click",()=>reviewWalletRequest(item,"rejected",reject));actions.append(approve,reject);row.appendChild(actions);}target.appendChild(row);
   });
  }catch(e){target.innerHTML='<div class="activityempty">Could not load wallet requests: '+String(e.message)+'</div>';}
 }
