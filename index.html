@@ -77,6 +77,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
       <label class="field" for="depositBkash">DEPOSIT bKash NUMBER</label><input class="control" id="depositBkash" maxlength="40" placeholder="01XXXXXXXXX">
       <label class="field" for="depositNagad">DEPOSIT NAGAD NUMBER</label><input class="control" id="depositNagad" maxlength="40" placeholder="01XXXXXXXXX">
       <label class="field" for="depositBinance">DEPOSIT BINANCE PAY ID / UID</label><input class="control" id="depositBinance" maxlength="100" placeholder="Binance Pay ID / UID">
+      <label class="field" for="depositLabelText">DEPOSIT PAYMENT LABEL (SHOWN TO MEMBERS)</label><input class="control" id="depositLabelText" maxlength="60" placeholder="Cash In Number">
       <label class="field" for="depositOffMessage">DEPOSIT OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="depositOffMessage" maxlength="500" placeholder="Deposit is temporarily unavailable. Please check back later."></textarea>
      </div>
      <div><h3>Withdraw Settings</h3>
@@ -84,6 +85,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
       <label class="field" for="withdrawBkash">WITHDRAW bKash PAYOUT INFO</label><input class="control" id="withdrawBkash" maxlength="100" placeholder="Payout account / instructions">
       <label class="field" for="withdrawNagad">WITHDRAW NAGAD PAYOUT INFO</label><input class="control" id="withdrawNagad" maxlength="100" placeholder="Payout account / instructions">
       <label class="field" for="withdrawBinance">WITHDRAW BINANCE PAY ID / UID</label><input class="control" id="withdrawBinance" maxlength="100" placeholder="Binance Pay ID / UID">
+      <label class="field" for="withdrawLabelText">WITHDRAW PAYOUT LABEL (SHOWN TO MEMBERS)</label><input class="control" id="withdrawLabelText" maxlength="60" placeholder="Cash Out Number">
       <label class="field" for="withdrawOffMessage">WITHDRAW OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="withdrawOffMessage" maxlength="500" placeholder="Withdrawals are temporarily unavailable."></textarea>
      </div></div>
     <button class="send" id="saveWalletSettings" type="button" style="cursor:pointer;opacity:1">Save Deposit & Withdraw Settings</button><p class="fineprint" id="walletSettingsStatus" role="status">Payment account details and service availability are controlled here.</p>
@@ -426,12 +428,13 @@ async function loadWalletAdminSettings(){
   document.getElementById("depositBkash").value=w.depositAccounts?.bKash||"";document.getElementById("depositNagad").value=w.depositAccounts?.Nagad||"";document.getElementById("depositBinance").value=w.depositAccounts?.Binance||"";
   document.getElementById("withdrawBkash").value=w.withdrawAccounts?.bKash||"";document.getElementById("withdrawNagad").value=w.withdrawAccounts?.Nagad||"";document.getElementById("withdrawBinance").value=w.withdrawAccounts?.Binance||"";
   document.getElementById("depositOffMessage").value=w.depositMessage||"Deposit is temporarily unavailable. Please check back later.";document.getElementById("withdrawOffMessage").value=w.withdrawMessage||"Withdrawals are temporarily unavailable. Please check back later.";
+  document.getElementById("depositLabelText").value=w.depositLabelText||"Cash In Number";document.getElementById("withdrawLabelText").value=w.withdrawLabelText||"Cash Out Number";
   walletAdminMessage("Wallet settings loaded.");
  }catch(e){walletAdminMessage("Could not load wallet settings: "+e.message,true);}
 }
 document.getElementById("saveWalletSettings").addEventListener("click",async()=>{
  const button=document.getElementById("saveWalletSettings");button.disabled=true;button.textContent="Saving…";const value=id=>document.getElementById(id).value.trim();
- const payload={depositEnabled:value("depositEnabled")==="on",withdrawEnabled:value("withdrawEnabled")==="on",depositAccounts:{bKash:value("depositBkash"),Nagad:value("depositNagad"),Binance:value("depositBinance")},withdrawAccounts:{bKash:value("withdrawBkash"),Nagad:value("withdrawNagad"),Binance:value("withdrawBinance")},depositMessage:value("depositOffMessage")||"Deposit is temporarily unavailable. Please check back later.",withdrawMessage:value("withdrawOffMessage")||"Withdrawals are temporarily unavailable. Please check back later.",updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""};
+ const payload={depositEnabled:value("depositEnabled")==="on",withdrawEnabled:value("withdrawEnabled")==="on",depositAccounts:{bKash:value("depositBkash"),Nagad:value("depositNagad"),Binance:value("depositBinance")},withdrawAccounts:{bKash:value("withdrawBkash"),Nagad:value("withdrawNagad"),Binance:value("withdrawBinance")},depositMessage:value("depositOffMessage")||"Deposit is temporarily unavailable. Please check back later.",withdrawMessage:value("withdrawOffMessage")||"Withdrawals are temporarily unavailable. Please check back later.",depositLabelText:value("depositLabelText")||"Cash In Number",withdrawLabelText:value("withdrawLabelText")||"Cash Out Number",updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""};
  try{await setDoc(doc(db,"siteSettings","wallet"),payload,{merge:true});walletAdminMessage("Deposit & Withdraw settings saved successfully.");await writeActivity("Updated wallet payment settings","Deposit: "+(payload.depositEnabled?"ON":"OFF")+" · Withdraw: "+(payload.withdrawEnabled?"ON":"OFF"));await loadActivity();}
  catch(e){walletAdminMessage("Could not save wallet settings: "+e.message,true);}finally{button.disabled=false;button.textContent="Save Deposit & Withdraw Settings";}
 });
