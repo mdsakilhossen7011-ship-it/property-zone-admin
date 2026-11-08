@@ -208,7 +208,7 @@ body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibilit
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
+import { getStorage, ref as storageRef, runTransaction, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 const firebaseConfig = {
  apiKey:"AIzaSyDRLWFf4ISfQdoZp7JaQAWwwKCoL_aV6No",
  authDomain:"property-zone-17121.firebaseapp.com",
@@ -440,8 +440,28 @@ document.getElementById("saveWalletSettings").addEventListener("click",async()=>
 });
 async function reviewWalletRequest(item,status,button){
  button.disabled=true;button.textContent=status==="approved"?"Approving…":"Rejecting…";
- try{await updateDoc(doc(db,"propertyEnquiries",item.id),{status,reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser?.uid||"",reviewedByEmail:auth.currentUser?.email||""});await writeActivity((status==="approved"?"Approved ":"Rejected ")+(item.requestType==="wallet-deposit"?"deposit":"withdrawal")+" request",item.email||item.id);await loadWalletRequests();await loadActivity();}
- catch(e){walletAdminMessage("Could not review request: "+e.message,true);button.disabled=false;button.textContent=status==="approved"?"Approve":"Reject";}
+ try{
+  const requestRef=doc(db,"propertyEnquiries",item.id),walletRef=doc(db,"wallets",item.uid);
+  await runTransaction(db,async tx=>{
+   const requestSnap=await tx.get(requestRef);
+   if(!requestSnap.exists())throw new Error("Request no longer exists.");
+   const current=requestSnap.data();
+   if(current.status!=="open")throw new Error("This request has already been reviewed.");
+   const walletSnap=await tx.get(walletRef);
+   if(status==="approved"){
+    const amount=Number(current.amountUSD||0);
+    if(!Number.isFinite(amount)||amount<=0)throw new Error("Invalid request amount.");
+    const balance=walletSnap.exists()?Number(walletSnap.data().balanceUSD||0):0;
+    if(current.requestType==="wallet-withdraw"&&balance<amount)throw new Error("Insufficient wallet balance for this withdrawal.");
+    const nextBalance=current.requestType==="wallet-deposit"?balance+amount:balance-amount;
+    if(walletSnap.exists())tx.update(walletRef,{balanceUSD:nextBalance,updatedAt:serverTimestamp()});
+    else tx.set(walletRef,{uid:current.uid,balanceUSD:nextBalance,updatedAt:serverTimestamp(),createdAt:serverTimestamp()});
+   }
+   tx.update(requestRef,{status,reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser?.uid||"",reviewedByEmail:auth.currentUser?.email||""});
+  });
+  await writeActivity((status==="approved"?"Approved and credited/debited ":"Rejected ")+(item.requestType==="wallet-deposit"?"deposit":"withdrawal")+" request",item.email||item.id);
+  await loadWalletRequests();await loadActivity();
+ }catch(e){walletAdminMessage("Could not review request: "+e.message,true);button.disabled=false;button.textContent=status==="approved"?"Approve":"Reject";}
 }
 async function loadWalletRequests(){
  const target=document.getElementById("walletRequestList");target.innerHTML='<div class="activityempty">Loading wallet requests…</div>';
