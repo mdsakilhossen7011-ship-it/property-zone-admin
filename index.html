@@ -89,7 +89,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
       <label class="field" for="withdrawOffMessage">WITHDRAW OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="withdrawOffMessage" maxlength="500" placeholder="Withdrawals are temporarily unavailable."></textarea>
      </div></div>
     <button class="send" id="saveWalletSettings" type="button" style="cursor:pointer;opacity:1">Save Deposit & Withdraw Settings</button><p class="fineprint" id="walletSettingsStatus" role="status">Payment account details and service availability are controlled here.</p>
-    <div class="sectionhead"><div><h3>Deposit & Withdrawal Requests</h3><p>Check member payment details and approve or reject each request.</p></div><button class="btn" id="refreshWalletRequests" type="button">Refresh Requests</button></div>
+    <div class="sectionhead"><div><h3>Deposit & Withdrawal Requests</h3><p>Check member payment details and approve or reject each request.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="processMaturedPackages" type="button">Process 30-Day Packages</button><button class="btn" id="refreshWalletRequests" type="button">Refresh Requests</button></div></div><p class="fineprint" id="maturityStatus" role="status">Matured packages are credited to Main Wallet when the admin panel processes them.</p>
     <div id="walletRequestList" class="quicklist"><div class="activityempty">Wallet requests will appear here.</div></div>
    </section>
    <article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">ADMIN-ONLY ACCESS</span></div></article>
@@ -438,6 +438,41 @@ document.getElementById("saveWalletSettings").addEventListener("click",async()=>
  try{await setDoc(doc(db,"siteSettings","wallet"),payload,{merge:true});walletAdminMessage("Deposit & Withdraw settings saved successfully.");await writeActivity("Updated wallet payment settings","Deposit: "+(payload.depositEnabled?"ON":"OFF")+" · Withdraw: "+(payload.withdrawEnabled?"ON":"OFF"));await loadActivity();}
  catch(e){walletAdminMessage("Could not save wallet settings: "+e.message,true);}finally{button.disabled=false;button.textContent="Save Deposit & Withdraw Settings";}
 });
+async function processMaturedPackages(){
+ const button=document.getElementById("processMaturedPackages"),status=document.getElementById("maturityStatus");
+ if(button){button.disabled=true;button.textContent="Processing…";}
+ if(status)status.textContent="Checking 30-day package maturity…";
+ let processed=0,skipped=0;
+ try{
+  const snap=await getDocs(collection(db,"activePackages"));
+  const now=Date.now(),termMs=30*24*60*60*1000;
+  for(const item of snap.docs){
+   if(item.data().status!=="active")continue;
+   const started=item.data().startedAt?.toMillis?.();
+   if(!started||now<started+termMs)continue;
+   const packageRef=doc(db,"activePackages",item.id),walletRef=doc(db,"wallets",item.data().uid);
+   try{
+    await runTransaction(db,async tx=>{
+     const ps=await tx.get(packageRef);
+     if(!ps.exists())return;
+     const p=ps.data(),start=p.startedAt?.toMillis?.();
+     if(p.status!=="active"||!start||Date.now()<start+termMs)return;
+     const principal=Number(p.amountUSD||0);
+     if(!Number.isFinite(principal)||principal<=0)throw new Error("Invalid package amount.");
+     const earnings=Math.round(principal*0.02*30*100)/100,payout=Math.round((principal+earnings)*100)/100;
+     const ws=await tx.get(walletRef),balance=ws.exists()?Number(ws.data().balanceUSD||0):0;
+     if(ws.exists())tx.update(walletRef,{balanceUSD:Math.round((balance+payout)*100)/100,updatedAt:serverTimestamp()});
+     else tx.set(walletRef,{uid:p.uid,balanceUSD:payout,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+     tx.update(packageRef,{status:"completed",termDays:30,completedAt:serverTimestamp(),maturityEarningsUSD:earnings,maturityPayoutUSD:payout});
+    });
+    processed++;
+   }catch(e){skipped++;console.warn("Maturity processing failed:",item.id,e.message);}
+  }
+  if(status)status.textContent="Maturity check complete: "+processed+" package(s) credited; "+skipped+" issue(s).";
+  if(processed)await writeActivity("Processed matured packages",processed+" package(s) credited to Main Wallet");
+ }catch(e){if(status)status.textContent="Maturity processing failed: "+e.message;}
+ finally{if(button){button.disabled=false;button.textContent="Process 30-Day Packages";}}
+}
 async function reviewWalletRequest(item,status,button){
  button.disabled=true;button.textContent=status==="approved"?"Approving…":"Rejecting…";
  try{
@@ -473,6 +508,7 @@ async function loadWalletRequests(){
  }catch(e){target.innerHTML='<div class="activityempty">Could not load wallet requests: '+String(e.message)+'</div>';}
 }
 document.getElementById("refreshWalletRequests").addEventListener("click",loadWalletRequests);
+document.getElementById("processMaturedPackages").addEventListener("click",processMaturedPackages);
 async function loadSiteSettings(){
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
@@ -554,6 +590,7 @@ async function authorize(user){
  loadAdminOverview();
  loadSiteSettings();
  loadWalletAdminSettings();
+ await processMaturedPackages();
  loadWalletRequests();
  loadOffers();
  await addSampleListings(true);
