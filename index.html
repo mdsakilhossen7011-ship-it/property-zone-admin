@@ -78,7 +78,6 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
       <label class="field" for="depositNagad">DEPOSIT NAGAD NUMBER</label><input class="control" id="depositNagad" maxlength="40" placeholder="01XXXXXXXXX">
       <label class="field" for="depositBinance">DEPOSIT BINANCE PAY ID / UID</label><input class="control" id="depositBinance" maxlength="100" placeholder="Binance Pay ID / UID">
       <label class="field" for="depositLabelText">DEPOSIT PAYMENT LABEL (SHOWN TO MEMBERS)</label><input class="control" id="depositLabelText" maxlength="60" placeholder="Cash In Number">
-   document.getElementById("exchangeRateBDT").value=Number(w.exchangeRateBDT||0)||"";document.getElementById("minimumWithdrawBDT").value=Math.max(500,Number(w.minimumWithdrawBDT||500));
       <label class="field" for="depositOffMessage">DEPOSIT OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="depositOffMessage" maxlength="500" placeholder="Deposit is temporarily unavailable. Please check back later."></textarea>
      </div>
      <div><h3>Withdraw Settings</h3>
@@ -431,6 +430,7 @@ async function loadWalletAdminSettings(){
   document.getElementById("withdrawBkash").value=w.withdrawAccounts?.bKash||"";document.getElementById("withdrawNagad").value=w.withdrawAccounts?.Nagad||"";document.getElementById("withdrawBinance").value=w.withdrawAccounts?.Binance||"";
   document.getElementById("depositOffMessage").value=w.depositMessage||"Deposit is temporarily unavailable. Please check back later.";document.getElementById("withdrawOffMessage").value=w.withdrawMessage||"Withdrawals are temporarily unavailable. Please check back later.";
   document.getElementById("depositLabelText").value=w.depositLabelText||"Cash In Number";document.getElementById("withdrawLabelText").value=w.withdrawLabelText||"Cash Out Number";
+  document.getElementById("exchangeRateBDT").value=Number(w.exchangeRateBDT||0)||"";document.getElementById("minimumWithdrawBDT").value=Math.max(500,Number(w.minimumWithdrawBDT||500));
   walletAdminMessage("Wallet settings loaded.");
  }catch(e){walletAdminMessage("Could not load wallet settings: "+e.message,true);}
 }
