@@ -24,6 +24,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   <a href="#members" onclick="activate(this)"><span class="ico">♙</span>Members</a>
   <a href="#properties" onclick="activate(this)"><span class="ico">⌂</span>Properties</a>
   <a href="#offers" onclick="activate(this)"><span class="ico">✧</span>Offers & Promotions</a>
+  <a href="#walletManager" onclick="activate(this)"><span class="ico">৳</span>Wallet & Payments</a>
   <a href="#notices" onclick="activate(this)"><span class="ico">▤</span>Send Notice</a>
   <a href="#commission" onclick="activate(this)"><span class="ico">◇</span>Referrals & Commission</a>
   <div class="navlabel">INSIGHTS & SYSTEM</div>
@@ -68,6 +69,27 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
 </section>
   <section class="panel" id="memberInbox" style="grid-column:1/-1;margin-top:4px"><div class="eyebrow">MEMBER COMMUNICATION</div><h2>Property Enquiries & Support Inbox</h2><div class="sectionhead"><div><h3>Property Enquiries</h3></div><button class="btn" id="refreshEnquiries" type="button">Refresh</button></div><div id="enquiryList" class="quicklist"></div><div class="sectionhead"><div><h3>Support Requests</h3></div><button class="btn" id="refreshSupport" type="button">Refresh</button></div><div id="supportList" class="quicklist"></div><div class="sectionhead"><div><h3>Member Property Submissions</h3></div><button class="btn" id="refreshSubmissions" type="button">Refresh</button></div><div id="submissionList" class="quicklist"></div></section>
   
+   <section class="panel" id="walletManager" style="grid-column:1/-1;margin-top:4px">
+    <div class="eyebrow">PAYMENTS & MEMBER WALLET</div><h2>Deposit & Withdraw Controls</h2><p class="desc">Set the payment accounts shown to members, turn each service on or off, and write the message members see when a service is unavailable.</p>
+    <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+     <div><h3>Deposit Settings</h3>
+      <label class="field" for="depositEnabled">DEPOSIT SERVICE</label><select class="control" id="depositEnabled"><option value="off">OFF — Do not accept requests</option><option value="on">ON — Accept requests</option></select>
+      <label class="field" for="depositBkash">DEPOSIT bKash NUMBER</label><input class="control" id="depositBkash" maxlength="40" placeholder="01XXXXXXXXX">
+      <label class="field" for="depositNagad">DEPOSIT NAGAD NUMBER</label><input class="control" id="depositNagad" maxlength="40" placeholder="01XXXXXXXXX">
+      <label class="field" for="depositBinance">DEPOSIT BINANCE PAY ID / UID</label><input class="control" id="depositBinance" maxlength="100" placeholder="Binance Pay ID / UID">
+      <label class="field" for="depositOffMessage">DEPOSIT OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="depositOffMessage" maxlength="500" placeholder="Deposit is temporarily unavailable. Please check back later."></textarea>
+     </div>
+     <div><h3>Withdraw Settings</h3>
+      <label class="field" for="withdrawEnabled">WITHDRAW SERVICE</label><select class="control" id="withdrawEnabled"><option value="off">OFF — Do not accept requests</option><option value="on">ON — Accept requests</option></select>
+      <label class="field" for="withdrawBkash">WITHDRAW bKash PAYOUT INFO</label><input class="control" id="withdrawBkash" maxlength="100" placeholder="Payout account / instructions">
+      <label class="field" for="withdrawNagad">WITHDRAW NAGAD PAYOUT INFO</label><input class="control" id="withdrawNagad" maxlength="100" placeholder="Payout account / instructions">
+      <label class="field" for="withdrawBinance">WITHDRAW BINANCE PAY ID / UID</label><input class="control" id="withdrawBinance" maxlength="100" placeholder="Binance Pay ID / UID">
+      <label class="field" for="withdrawOffMessage">WITHDRAW OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="withdrawOffMessage" maxlength="500" placeholder="Withdrawals are temporarily unavailable."></textarea>
+     </div></div>
+    <button class="send" id="saveWalletSettings" type="button" style="cursor:pointer;opacity:1">Save Deposit & Withdraw Settings</button><p class="fineprint" id="walletSettingsStatus" role="status">Payment account details and service availability are controlled here.</p>
+    <div class="sectionhead"><div><h3>Deposit & Withdrawal Requests</h3><p>Check member payment details and approve or reject each request.</p></div><button class="btn" id="refreshWalletRequests" type="button">Refresh Requests</button></div>
+    <div id="walletRequestList" class="quicklist"><div class="activityempty">Wallet requests will appear here.</div></div>
+   </section>
    <article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">ADMIN-ONLY ACCESS</span></div></article>
   <section class="panel" id="offerManager" style="grid-column:1/-1;margin-top:4px">
    <div class="eyebrow">PROMOTION MANAGER</div><h2>Create & Manage Offers</h2><p class="desc">Published offers appear on the public Property Zone homepage. Save as draft first or publish immediately.</p>
@@ -396,6 +418,38 @@ async function loadMembers(){
 }
 document.getElementById("memberSearch").addEventListener("input",renderMembers);
 document.getElementById("refreshMembers").addEventListener("click",loadMembers);
+const walletSettingsStatus=document.getElementById("walletSettingsStatus");
+function walletAdminMessage(message,bad=false){walletSettingsStatus.textContent=message;walletSettingsStatus.style.color=bad?"#ffaaa5":"#91d7ad";}
+async function loadWalletAdminSettings(){
+ try{const snap=await getDoc(doc(db,"siteSettings","wallet")),w=snap.exists()?snap.data():{};
+  document.getElementById("depositEnabled").value=w.depositEnabled===true?"on":"off";document.getElementById("withdrawEnabled").value=w.withdrawEnabled===true?"on":"off";
+  document.getElementById("depositBkash").value=w.depositAccounts?.bKash||"";document.getElementById("depositNagad").value=w.depositAccounts?.Nagad||"";document.getElementById("depositBinance").value=w.depositAccounts?.Binance||"";
+  document.getElementById("withdrawBkash").value=w.withdrawAccounts?.bKash||"";document.getElementById("withdrawNagad").value=w.withdrawAccounts?.Nagad||"";document.getElementById("withdrawBinance").value=w.withdrawAccounts?.Binance||"";
+  document.getElementById("depositOffMessage").value=w.depositMessage||"Deposit is temporarily unavailable. Please check back later.";document.getElementById("withdrawOffMessage").value=w.withdrawMessage||"Withdrawals are temporarily unavailable. Please check back later.";
+  walletAdminMessage("Wallet settings loaded.");
+ }catch(e){walletAdminMessage("Could not load wallet settings: "+e.message,true);}
+}
+document.getElementById("saveWalletSettings").addEventListener("click",async()=>{
+ const button=document.getElementById("saveWalletSettings");button.disabled=true;button.textContent="Saving…";const value=id=>document.getElementById(id).value.trim();
+ const payload={depositEnabled:value("depositEnabled")==="on",withdrawEnabled:value("withdrawEnabled")==="on",depositAccounts:{bKash:value("depositBkash"),Nagad:value("depositNagad"),Binance:value("depositBinance")},withdrawAccounts:{bKash:value("withdrawBkash"),Nagad:value("withdrawNagad"),Binance:value("withdrawBinance")},depositMessage:value("depositOffMessage")||"Deposit is temporarily unavailable. Please check back later.",withdrawMessage:value("withdrawOffMessage")||"Withdrawals are temporarily unavailable. Please check back later.",updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""};
+ try{await setDoc(doc(db,"siteSettings","wallet"),payload,{merge:true});walletAdminMessage("Deposit & Withdraw settings saved successfully.");await writeActivity("Updated wallet payment settings","Deposit: "+(payload.depositEnabled?"ON":"OFF")+" · Withdraw: "+(payload.withdrawEnabled?"ON":"OFF"));await loadActivity();}
+ catch(e){walletAdminMessage("Could not save wallet settings: "+e.message,true);}finally{button.disabled=false;button.textContent="Save Deposit & Withdraw Settings";}
+});
+async function reviewWalletRequest(item,status,button){
+ button.disabled=true;button.textContent=status==="approved"?"Approving…":"Rejecting…";
+ try{await updateDoc(doc(db,"propertyEnquiries",item.id),{status,reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser?.uid||"",reviewedByEmail:auth.currentUser?.email||""});await writeActivity((status==="approved"?"Approved ":"Rejected ")+(item.requestType==="wallet-deposit"?"deposit":"withdrawal")+" request",item.email||item.id);await loadWalletRequests();await loadActivity();}
+ catch(e){walletAdminMessage("Could not review request: "+e.message,true);button.disabled=false;button.textContent=status==="approved"?"Approve":"Reject";}
+}
+async function loadWalletRequests(){
+ const target=document.getElementById("walletRequestList");target.innerHTML='<div class="activityempty">Loading wallet requests…</div>';
+ try{const snap=await getDocs(collection(db,"propertyEnquiries"));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.requestType==="wallet-deposit"||x.requestType==="wallet-withdraw").sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));target.innerHTML="";
+  if(!rows.length){target.innerHTML='<div class="activityempty">No deposit or withdrawal requests yet.</div>';return;}
+  rows.forEach(item=>{const row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:13px;margin:8px 0;background:#0d131c";const title=document.createElement("strong");title.textContent=(item.requestType==="wallet-deposit"?"DEPOSIT":"WITHDRAW")+" · "+(item.name||item.email||"Member")+" · $"+Number(item.amountUSD||0).toFixed(2);const detail=document.createElement("p");detail.style.cssText="white-space:pre-wrap;color:#aab6c6;font-size:12px";detail.textContent="Email: "+(item.email||"—")+"\nMethod: "+(item.paymentMethod||"—")+"\nMember account: "+(item.walletNumber||item.paymentAccount||"—")+"\nDeposit to: "+(item.receivingAccount||"—")+"\nPayout info: "+(item.adminPayoutAccount||"—")+"\nTransaction ID: "+(item.transactionId||"Not applicable")+"\nStatus: "+(item.status||"open");row.append(title,detail);
+   if(item.status==="open"){const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";const approve=document.createElement("button");approve.className="btn";approve.type="button";approve.textContent="Approve";approve.addEventListener("click",()=>reviewWalletRequest(item,"approved",approve));const reject=document.createElement("button");reject.className="btn";reject.type="button";reject.textContent="Reject";reject.addEventListener("click",()=>reviewWalletRequest(item,"rejected",reject));actions.append(approve,reject);row.appendChild(actions);}target.appendChild(row);
+  });
+ }catch(e){target.innerHTML='<div class="activityempty">Could not load wallet requests: '+String(e.message)+'</div>';}
+}
+document.getElementById("refreshWalletRequests").addEventListener("click",loadWalletRequests);
 async function loadSiteSettings(){
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
@@ -476,6 +530,8 @@ async function authorize(user){
  gate.style.display="none";
  loadAdminOverview();
  loadSiteSettings();
+ loadWalletAdminSettings();
+ loadWalletRequests();
  loadOffers();
  await addSampleListings(true);
  loadProperties();
