@@ -369,7 +369,7 @@ document.getElementById("refreshOffers").addEventListener("click",loadOffers);
 
 function renderMembers(){
  const q=(document.getElementById("memberSearch").value||"").toLowerCase().trim();
- const rows=memberRecords.filter(m=>(m.name+" "+m.email+" "+m.uid).toLowerCase().includes(q));
+ const rows=memberRecords.filter(m=>(m.name+" "+m.email+" "+(m.phoneNumber||"")+" "+m.uid).toLowerCase().includes(q));
  memberList.innerHTML="";
  if(!rows.length){memberList.textContent="No members found.";return;}
  rows.forEach(m=>{
@@ -377,11 +377,12 @@ function renderMembers(){
   const info=document.createElement("div");info.style.minWidth="0";
   const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";
   const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";
+  const phone=document.createElement("div");phone.className="fineprint";phone.textContent="Phone: "+(m.phoneNumber||"Not provided");
   const uid=document.createElement("div");uid.className="fineprint";uid.textContent="UID: "+m.uid;
   const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
   const action=document.createElement("button");action.className="btn";action.type="button";action.textContent=m.status==="active"?"Deactivate":"Activate";
   action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});const code=String(m.referralCode||"").trim().toUpperCase();if(code){await setDoc(doc(db,"referralCodes",code),{code,active:next==="active",updatedAt:serverTimestamp()},{merge:true});}await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadReferrals();await loadActivity();await loadAdminOverview();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
-  info.append(name,email,uid,status);row.append(info,action);memberList.appendChild(row);
+  info.append(name,email,phone,uid,status);row.append(info,action);memberList.appendChild(row);
  });
 }
 async function loadMembers(){
