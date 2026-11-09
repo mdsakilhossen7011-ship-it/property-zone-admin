@@ -270,7 +270,19 @@ async function loadReferrals(){
  try{
   const [ms,ss]=await Promise.all([getDocs(collection(db,"members")),getDoc(doc(db,"referralSettings","general"))]);
   const members=ms.docs.map(d=>({uid:d.id,...d.data()}));
-  await Promise.all(members.map(async member=>{const code=String(member.referralCode||"").trim().toUpperCase();if(!code)return;try{const codeRef=doc(db,"referralCodes",code),codeSnap=await getDoc(codeRef);await setDoc(codeRef,{code,active:member.status==="active",createdAt:codeSnap.exists()?(codeSnap.data().createdAt||member.createdAt||serverTimestamp()):(member.createdAt||serverTimestamp()),updatedAt:serverTimestamp()},{merge:true});}catch(codeError){console.warn("Referral code sync skipped:",codeError.message);}}));
+  const codeSyncResults=await Promise.all(members.map(async member=>{
+   const code=String(member.referralCode||"").trim().toUpperCase();
+   if(!code)return {skipped:true};
+   try{
+    const codeRef=doc(db,"referralCodes",code),codeSnap=await getDoc(codeRef);
+    await setDoc(codeRef,{code,active:member.status==="active",createdAt:codeSnap.exists()?(codeSnap.data().createdAt||member.createdAt||serverTimestamp()):(member.createdAt||serverTimestamp()),updatedAt:serverTimestamp()},{merge:true});
+    return {ok:true};
+   }catch(codeError){
+    console.error("Referral code sync failed for "+code+":",codeError);
+    return {ok:false,code,error:codeError.message||String(codeError)};
+   }
+  }));
+  const codeSyncFailures=codeSyncResults.filter(x=>x.ok===false);
   if(ss.exists())document.getElementById("commissionRate").value=Number(ss.data().rate??10);
   const validCodes=new Set(members.map(x=>String(x.referralCode||"").trim().toUpperCase()).filter(Boolean));
   const referred=members.filter(x=>validCodes.has(String(x.referredByCode||"").trim().toUpperCase()));
@@ -278,9 +290,13 @@ async function loadReferrals(){
   document.getElementById("referralCount").textContent=String(referred.length);
   document.getElementById("activeReferralCount").textContent=String(referred.filter(x=>x.status==="active").length);
   referralList.innerHTML="";
-  if(!referred.length){referralList.innerHTML='<div class="activityempty">No referral records yet.</div>';commissionMessage("No referrals recorded yet.");return;}
-  referred.forEach(m=>{const row=document.createElement("div");row.className="quickrow";const info=document.createElement("div");info.style.minWidth="0";const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";const code=document.createElement("div");code.className="fineprint";code.textContent="Used referral code: "+m.referredByCode;const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");info.append(name,email,code,status);row.append(info);referralList.appendChild(row);});
-  commissionMessage("Loaded "+referred.length+" referral record(s). Commission amounts need eligible transaction data.");
+  if(!referred.length)referralList.innerHTML='<div class="activityempty">No referral records yet.</div>';
+  else referred.forEach(m=>{const row=document.createElement("div");row.className="quickrow";const info=document.createElement("div");info.style.minWidth="0";const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";const code=document.createElement("div");code.className="fineprint";code.textContent="Used referral code: "+m.referredByCode;const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");info.append(name,email,code,status);row.append(info);referralList.appendChild(row);});
+  if(codeSyncFailures.length){
+   const first=codeSyncFailures[0];
+   commissionMessage("Referral list loaded, but "+codeSyncFailures.length+" referral code(s) failed to sync. First: "+first.code+" — "+first.error,true);
+  }else if(!referred.length)commissionMessage("Codes synced successfully. No referral signups recorded yet.");
+  else commissionMessage("Codes synced successfully. Loaded "+referred.length+" referral record(s). Commission amounts need eligible transaction data.");
  }catch(e){referralList.innerHTML='<div class="activityempty">Could not load referrals. Check Firestore Rules.</div>';commissionMessage("Referral load failed: "+e.message,true);}
 }
 document.getElementById("saveCommissionRate").addEventListener("click",async()=>{const rate=Number(document.getElementById("commissionRate").value);if(!Number.isFinite(rate)||rate<0||rate>100){commissionMessage("Rate must be between 0 and 100.",true);return;}const b=document.getElementById("saveCommissionRate");b.disabled=true;b.textContent="Saving…";try{await setDoc(doc(db,"referralSettings","general"),{rate,updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""},{merge:true});commissionMessage("Commission rate saved: "+rate+"%.");await writeActivity("Updated commission rate",rate+"%");await loadActivity();}catch(e){commissionMessage("Save failed: "+e.message+" — referralSettings Firestore rule required.",true);}finally{b.disabled=false;b.textContent="Save Rate";}});
