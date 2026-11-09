@@ -275,7 +275,7 @@ async function loadReferrals(){
    if(!code)return {skipped:true};
    try{
     const codeRef=doc(db,"referralCodes",code),codeSnap=await getDoc(codeRef);
-    await setDoc(codeRef,{code,active:member.status==="active",createdAt:codeSnap.exists()?(codeSnap.data().createdAt||member.createdAt||serverTimestamp()):(member.createdAt||serverTimestamp()),updatedAt:serverTimestamp()},{merge:true});
+    if(!codeSnap.exists()){await setDoc(codeRef,{code,active:member.status==="active",createdAt:member.createdAt||serverTimestamp(),updatedAt:serverTimestamp()},{merge:true});}
     return {ok:true};
    }catch(codeError){
     console.error("Referral code sync failed for "+code+":",codeError);
