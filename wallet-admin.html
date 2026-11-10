@@ -123,8 +123,7 @@ async function reviewRequest(id,action){
   const amount=Number(r.amountBDT);if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("Invalid request amount.");
   const walletRef=doc(db,"wallets",r.uid),walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};
   if(r.requestType==="wallet-deposit"&&action==="approve"){
-   let balance=Number(wallet.balanceBDT);
-   if(!Number.isFinite(balance)){const oldUsd=Number(wallet.balanceUSD||0),rate=Number(r.exchangeRateBDT||0);if(oldUsd<0||!Number.isFinite(oldUsd)||rate<=0)throw new Error("Wallet balance needs manual review before crediting.");balance=Math.round(oldUsd*rate*100)/100;}
+   let balance=Number(wallet.balanceBDT??0);if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review before crediting.");
    tx.set(walletRef,{uid:r.uid,balanceBDT:Math.round((balance+amount)*100)/100,updatedAt:serverTimestamp(),lastDepositRequestId:id},{merge:true});
   }
   if(r.requestType==="wallet-withdraw"){
@@ -133,8 +132,7 @@ async function reviewRequest(id,action){
    if(r.reservedFunds===true&&pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
    if(action==="approve"){
     if(r.reservedFunds!==true)throw new Error("This legacy withdrawal has no reserved-funds marker. Manual review is required.");
-    let balance=Number(wallet.balanceBDT);
-    if(!Number.isFinite(balance)){const oldUsd=Number(wallet.balanceUSD||0),rate=Number(r.exchangeRateBDT||0);if(oldUsd<0||!Number.isFinite(oldUsd)||rate<=0)throw new Error("Wallet balance needs manual review.");balance=Math.round(oldUsd*rate*100)/100;}
+    let balance=Number(wallet.balanceBDT??0);if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review.");
     if(balance+0.000001<amount)throw new Error("Wallet balance is lower than the withdrawal amount.");
     tx.update(walletRef,{balanceBDT:Math.round((balance-amount)*100)/100,pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
    }else if(r.reservedFunds===true){
