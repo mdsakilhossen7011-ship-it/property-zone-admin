@@ -71,7 +71,16 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   
    <section class="panel" id="walletTools" style="grid-column:1/-1;margin-top:4px">
 <div class="eyebrow">PACKAGE & WALLET OPERATIONS</div><h2>Package & Wallet Tools</h2>
-<p class="desc">Deposit and withdrawal settings and request approvals are handled in the separate Wallet Admin Panel.</p>
+<p class="desc">Deposit and withdrawal request approvals stay in the separate Wallet Admin Panel. Set the minimum BDT amounts here.</p>
+<div style="border:1px solid #303a47;border-radius:12px;padding:16px;margin:14px 0 20px;background:#0d141e">
+ <div class="eyebrow">WALLET LIMITS · BDT ONLY</div><h3>Minimum Deposit & Withdrawal</h3>
+ <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+  <div><label class="field" for="minimumDepositBDT">MINIMUM DEPOSIT (৳ BDT)</label><input class="control" id="minimumDepositBDT" type="number" min="1" step="1" inputmode="numeric" placeholder="500"></div>
+  <div><label class="field" for="minimumWithdrawBDT">MINIMUM WITHDRAWAL (৳ BDT)</label><input class="control" id="minimumWithdrawBDT" type="number" min="1" step="1" inputmode="numeric" placeholder="500"></div>
+ </div>
+ <button class="send" id="saveWalletLimits" type="button" style="cursor:pointer;opacity:1">Save Minimum Amounts</button>
+ <p class="fineprint" id="walletLimitsStatus" role="status">Default minimum: ৳500 each until changed.</p>
+</div>
 <div class="sectionhead"><div><h3>Process 30-Day Packages</h3><p>Credit matured package payouts to member wallets.</p></div><button class="btn" id="processMaturedPackages" type="button">Process 30-Day Packages</button></div>
 <p class="fineprint" id="maturityStatus" role="status">Matured packages are credited to Main Wallet when the admin panel processes them.</p>
 <div style="border-top:1px solid #303a47;margin-top:22px;padding-top:20px">
@@ -494,7 +503,29 @@ document.getElementById("manualCreditButton").addEventListener("click",async()=>
  }catch(e){messageStatus(status,"Could not add wallet balance: "+e.message,true);}
  finally{button.disabled=false;button.textContent="Add Balance to Member Wallet";}
 });
+async function loadWalletLimits(){
+ const status=document.getElementById("walletLimitsStatus");
+ try{
+  const snap=await getDoc(doc(db,"siteSettings","wallet")),s=snap.exists()?snap.data():{};
+  document.getElementById("minimumDepositBDT").value=String(Number.isSafeInteger(Number(s.minimumDepositBDT))&&Number(s.minimumDepositBDT)>0?Number(s.minimumDepositBDT):500);
+  document.getElementById("minimumWithdrawBDT").value=String(Number.isSafeInteger(Number(s.minimumWithdrawBDT))&&Number(s.minimumWithdrawBDT)>0?Number(s.minimumWithdrawBDT):500);
+  if(status)status.textContent="Current limits loaded from Firebase (BDT).";
+ }catch(e){if(status)status.textContent="Could not load wallet limits: "+e.message;}
+}
+document.getElementById("saveWalletLimits").addEventListener("click",async()=>{
+ const button=document.getElementById("saveWalletLimits"),status=document.getElementById("walletLimitsStatus");
+ const minimumDepositBDT=Number(document.getElementById("minimumDepositBDT").value),minimumWithdrawBDT=Number(document.getElementById("minimumWithdrawBDT").value);
+ if(!Number.isSafeInteger(minimumDepositBDT)||minimumDepositBDT<1||!Number.isSafeInteger(minimumWithdrawBDT)||minimumWithdrawBDT<1){messageStatus(status,"দুটো ঘরেই ১ বা তার বেশি পূর্ণ BDT amount দিতে হবে।",true);return;}
+ button.disabled=true;button.textContent="Saving…";messageStatus(status,"Saving minimum amounts…");
+ try{
+  await setDoc(doc(db,"siteSettings","wallet"),{minimumDepositBDT,minimumWithdrawBDT,updatedAt:serverTimestamp()},{merge:true});
+  await writeActivity("Updated wallet minimum amounts","Minimum deposit ৳"+minimumDepositBDT+" · Minimum withdrawal ৳"+minimumWithdrawBDT);
+  messageStatus(status,"Saved: Minimum deposit ৳"+minimumDepositBDT+" · Minimum withdrawal ৳"+minimumWithdrawBDT+".");
+ }catch(e){messageStatus(status,"Save failed: "+e.message,true);}
+ finally{button.disabled=false;button.textContent="Save Minimum Amounts";}
+});
 async function loadSiteSettings(){
+ loadWalletLimits();
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
   if(snap.exists()){
