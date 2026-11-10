@@ -510,16 +510,29 @@ async function reviewWalletRequest(item,status,button){
   await runTransaction(db,async tx=>{
    const requestSnap=await tx.get(requestRef);if(!requestSnap.exists())throw new Error("Request no longer exists.");
    const current=requestSnap.data();if(!["open","pending"].includes(current.status))throw new Error("This request has already been reviewed.");
-   if(status==="success"){
-    const settingsSnap=await tx.get(settingsRef),settings=settingsSnap.exists()?settingsSnap.data():{},legacyRate=Number(settings.exchangeRateBDT||0),requestRate=Number(current.exchangeRateBDT||legacyRate);
-    const amountBDT=Number(current.amountBDT||(Number(current.amountUSD||0)*requestRate));
+   const isWithdraw=current.requestType==="wallet-withdraw",isReserved=isWithdraw&&current.reservedFunds===true;
+   let amountBDT=Number(current.amountBDT);
+   if(status==="success"||isReserved){
+    const settingsSnap=await tx.get(settingsRef),settings=settingsSnap.exists()?settingsSnap.data():{},legacyRate=Number(settings.exchangeRateBDT||0);
+    if(!Number.isFinite(amountBDT)||amountBDT<=0)amountBDT=Number(current.amountUSD||0)*Number(current.exchangeRateBDT||legacyRate);
     if(!Number.isFinite(amountBDT)||amountBDT<=0)throw new Error("Request has no valid BDT amount or saved conversion rate.");
-    if(current.requestType==="wallet-withdraw"){const minimum=Math.max(500,Number(settings.minimumWithdrawBDT||500));if(amountBDT<minimum)throw new Error("Request is below the current minimum withdrawal.");}
-    const walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};let balance=Number(wallet.balanceBDT);
-    if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(legacyRate)||legacyRate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*legacyRate*100)/100;}
-    if(current.requestType==="wallet-withdraw"&&balance+0.000001<amountBDT)throw new Error("Insufficient BDT wallet balance for this withdrawal.");
-    const nextBalance=current.requestType==="wallet-deposit"?balance+amountBDT:balance-amountBDT;
-    if(walletSnap.exists())tx.update(walletRef,{balanceBDT:Math.round(nextBalance*100)/100,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid:current.uid,balanceBDT:Math.round(nextBalance*100)/100,updatedAt:serverTimestamp(),createdAt:serverTimestamp()});
+    if(status==="success"&&isWithdraw){const minimum=Math.max(500,Number(settings.minimumWithdrawBDT||500));if(amountBDT<minimum)throw new Error("Request is below the current minimum withdrawal.");}
+    if(isWithdraw||current.requestType==="wallet-deposit"){
+     const walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};let balance=Number(wallet.balanceBDT);
+     if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(legacyRate)||legacyRate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*legacyRate*100)/100;}
+     const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0));
+     if(isWithdraw){
+      if(isReserved&&pending+0.000001<amountBDT)throw new Error("Reserved withdrawal amount is inconsistent. Please review the wallet manually.");
+      if(status==="success"&&balance+0.000001<amountBDT)throw new Error("Insufficient BDT wallet balance for this withdrawal.");
+      const nextBalance=status==="success"?Math.round((balance-amountBDT)*100)/100:balance;
+      const nextPending=isReserved?Math.max(0,Math.round((pending-amountBDT)*100)/100):pending;
+      if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,pendingWithdrawalBDT:nextPending,updatedAt:serverTimestamp()});
+      else if(status==="success")throw new Error("Member wallet does not exist.");
+     }else if(status==="success"){
+      const nextBalance=Math.round((balance+amountBDT)*100)/100;
+      if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid:current.uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+     }
+    }
    }
    tx.update(requestRef,{status,reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser?.uid||"",reviewedByEmail:auth.currentUser?.email||""});
   });
