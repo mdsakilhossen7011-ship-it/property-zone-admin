@@ -489,7 +489,7 @@ async function processMaturedPackages(){
      const settingsSnap=await tx.get(settingsRef),settings=settingsSnap.exists()?settingsSnap.data():{},legacyRate=Number(settings.exchangeRateBDT||0);
      const principal=Number(p.amountBDT||(Number(p.amountUSD||0)*Number(p.exchangeRateBDT||legacyRate)));
      if(!Number.isFinite(principal)||principal<=0)throw new Error("Invalid package amount or missing saved conversion rate.");
-     const earnings=Math.round(principal*0.02*30*100)/100,payout=Math.round((principal+earnings)*100)/100;
+     const totalEarnings=Math.round(principal*0.02*30*100)/100,alreadyPaid=Math.max(0,Number(p.dailyEarningsPaidBDT||0)),earnings=Math.max(0,Math.round((totalEarnings-alreadyPaid)*100)/100),payout=Math.round((principal+earnings)*100)/100;
      const ws=await tx.get(walletRef),wallet=ws.exists()?ws.data():{};let balance=Number(wallet.balanceBDT);
      if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(legacyRate)||legacyRate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*legacyRate*100)/100;}
      const nextBalance=Math.round((balance+payout)*100)/100;
