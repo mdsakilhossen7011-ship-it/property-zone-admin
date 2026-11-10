@@ -50,7 +50,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    <article class="module" id="members"><div class="moduleicon">♙</div><div><h3>Member Management</h3><p>Review member accounts and manage account status with admin-only permissions.</p><span class="state">FIRESTORE CONNECTED</span></div></article>
   <section class="panel" id="memberManager" style="grid-column:1/-1;margin-top:4px">
    <div class="eyebrow">MEMBER DIRECTORY</div><h2>Registered Members</h2>
-   <div style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0"><input class="control" id="memberSearch" type="search" placeholder="Search name, email or UID..." style="flex:1;min-width:180px"><button class="btn" id="refreshMembers" type="button">Refresh Members</button></div>
+   <div style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0"><input class="control" id="memberSearch" type="search" placeholder="Search by member email..." style="flex:1;min-width:180px"><button class="btn" id="refreshMembers" type="button">Refresh Members</button></div>
    <p class="fineprint" id="memberStatus" role="status">Loading members…</p>
    <div id="memberList" class="quicklist"></div>
   </section>
@@ -424,9 +424,11 @@ document.getElementById("refreshOffers").addEventListener("click",loadOffers);
 
 function renderMembers(){
  const q=(document.getElementById("memberSearch").value||"").toLowerCase().trim();
- const rows=memberRecords.filter(m=>(m.name+" "+m.email+" "+(m.phoneNumber||"")+" "+m.uid).toLowerCase().includes(q));
  memberList.innerHTML="";
- if(!rows.length){memberList.textContent="No members found.";return;}
+ if(!q){memberStatus.textContent=memberRecords.length+" account(s) loaded. Search with an email to view a member.";return;}
+ const rows=memberRecords.filter(m=>String(m.email||"").toLowerCase().includes(q));
+ if(!rows.length){memberStatus.textContent="No member found for this email.";memberList.textContent="No matching member.";return;}
+ memberStatus.textContent=rows.length+" member(s) found for this email.";
  rows.forEach(m=>{
   const row=document.createElement("div");row.className="quickrow";
   const info=document.createElement("div");info.style.minWidth="0";
@@ -445,7 +447,6 @@ async function loadMembers(){
  try{
   const snap=await getDocs(collection(db,"members"));
   memberRecords=snap.docs.map(d=>({uid:d.id,...d.data()}));
-  memberStatus.textContent=memberRecords.length+" member(s) found.";
   renderMembers();renderManualCreditMembers();
  }catch(e){memberStatus.textContent="Could not load members: "+e.message;memberList.textContent="Check Firestore Rules and admin permissions.";}
 }
