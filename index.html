@@ -24,7 +24,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
   <a href="#members" onclick="activate(this)"><span class="ico">♙</span>Members</a>
   <a href="#properties" onclick="activate(this)"><span class="ico">⌂</span>Properties</a>
   <a href="#offers" onclick="activate(this)"><span class="ico">✧</span>Offers & Promotions</a>
-  <a href="#walletManager" onclick="activate(this)"><span class="ico">৳</span>Wallet & Payments</a>
+  <a href="#walletTools" onclick="activate(this)"><span class="ico">◇</span>Package & Wallet Tools</a>
   <a href="#notices" onclick="activate(this)"><span class="ico">▤</span>Send Notice</a>
   <a href="#commission" onclick="activate(this)"><span class="ico">◇</span>Referrals & Commission</a>
   <div class="navlabel">INSIGHTS & SYSTEM</div>
@@ -69,44 +69,19 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
 </section>
   <section class="panel" id="memberInbox" style="grid-column:1/-1;margin-top:4px"><div class="eyebrow">MEMBER COMMUNICATION</div><h2>Property Enquiries & Support Inbox</h2><div class="sectionhead"><div><h3>Property Enquiries</h3></div><button class="btn" id="refreshEnquiries" type="button">Refresh</button></div><div id="enquiryList" class="quicklist"></div><div class="sectionhead"><div><h3>Support Requests</h3></div><button class="btn" id="refreshSupport" type="button">Refresh</button></div><div id="supportList" class="quicklist"></div><div class="sectionhead"><div><h3>Member Property Submissions</h3></div><button class="btn" id="refreshSubmissions" type="button">Refresh</button></div><div id="submissionList" class="quicklist"></div></section>
   
-   <section class="panel" id="walletManager" style="grid-column:1/-1;margin-top:4px">
-    <div class="eyebrow">PAYMENTS & MEMBER WALLET</div><h2>Deposit & Withdraw Controls</h2><p class="desc">Set the payment accounts shown to members, turn each service on or off, and write the message members see when a service is unavailable.</p>
-    <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
-     <div><h3>Deposit Settings</h3>
-      <label class="field" for="depositEnabled">DEPOSIT SERVICE</label><select class="control" id="depositEnabled"><option value="off">OFF — Do not accept requests</option><option value="on">ON — Accept requests</option></select>
-      <label class="field" for="depositBkash">DEPOSIT bKash NUMBER</label><input class="control" id="depositBkash" maxlength="40" placeholder="01XXXXXXXXX">
-      <label class="field" for="depositNagad">DEPOSIT NAGAD NUMBER</label><input class="control" id="depositNagad" maxlength="40" placeholder="01XXXXXXXXX">
-      <label class="field" for="depositRocket">DEPOSIT ROCKET NUMBER</label><input class="control" id="depositRocket" maxlength="40" placeholder="01XXXXXXXXX">
-      <label class="field" for="depositBank">DEPOSIT BANK ACCOUNT DETAILS</label><input class="control" id="depositBank" maxlength="100" placeholder="Bank name and account number">
-      <label class="field" for="depositBinance">DEPOSIT BINANCE PAY ID / UID</label><input class="control" id="depositBinance" maxlength="100" placeholder="Binance Pay ID / UID">
-      <label class="field" for="depositLabelText">DEPOSIT PAYMENT LABEL (SHOWN TO MEMBERS)</label><input class="control" id="depositLabelText" maxlength="60" placeholder="Cash In Number">
-      <label class="field" for="depositOffMessage">DEPOSIT OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="depositOffMessage" maxlength="500" placeholder="Deposit is temporarily unavailable. Please check back later."></textarea>
-     </div>
-     <div><h3>Withdraw Settings</h3>
-      <label class="field" for="withdrawEnabled">WITHDRAW SERVICE</label><select class="control" id="withdrawEnabled"><option value="off">OFF — Do not accept requests</option><option value="on">ON — Accept requests</option></select>
-      <label class="field" for="withdrawBkash">WITHDRAW bKash PAYOUT INFO</label><input class="control" id="withdrawBkash" maxlength="100" placeholder="Payout account / instructions">
-      <label class="field" for="withdrawNagad">WITHDRAW NAGAD PAYOUT INFO</label><input class="control" id="withdrawNagad" maxlength="100" placeholder="Payout account / instructions">
-      <label class="field" for="withdrawRocket">WITHDRAW ROCKET PAYOUT INFO</label><input class="control" id="withdrawRocket" maxlength="100" placeholder="Rocket number">
-      <label class="field" for="withdrawBank">WITHDRAW BANK ACCOUNT DETAILS</label><input class="control" id="withdrawBank" maxlength="100" placeholder="Bank name and account number">
-      <label class="field" for="withdrawBinance">WITHDRAW BINANCE PAY ID / UID</label><input class="control" id="withdrawBinance" maxlength="100" placeholder="Binance Pay ID / UID">
-      <label class="field" for="withdrawLabelText">WITHDRAW PAYOUT LABEL (SHOWN TO MEMBERS)</label><input class="control" id="withdrawLabelText" maxlength="60" placeholder="Cash Out Number">
-      <label class="field" for="withdrawOffMessage">WITHDRAW OFF / INSTRUCTION MESSAGE</label><textarea class="control" id="withdrawOffMessage" maxlength="500" placeholder="Withdrawals are temporarily unavailable."></textarea>
-     </div></div>
-     <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none;margin-top:12px"><div><label class="field" for="exchangeRateBDT">LEGACY BALANCE CONVERSION RATE (BDT)</label><input class="control" id="exchangeRateBDT" type="number" min="0.01" step="0.01" placeholder="Saved legacy conversion rate"></div><div><label class="field" for="minimumWithdrawBDT">MINIMUM WITHDRAWAL (BDT ৳)</label><input class="control" id="minimumWithdrawBDT" type="number" min="500" step="1" value="500"><p class="fineprint">Default minimum is ৳500. Requests below the saved minimum are blocked.</p></div></div>
-    <button class="send" id="saveWalletSettings" type="button" style="cursor:pointer;opacity:1">Save Deposit & Withdraw Settings</button><p class="fineprint" id="walletSettingsStatus" role="status">Payment account details and service availability are controlled here.</p>
-    <div class="sectionhead"><div><h3>Deposit & Withdrawal Requests</h3><p>Check member payment details and approve or reject each request.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="processMaturedPackages" type="button">Process 30-Day Packages</button><button class="btn" id="refreshWalletRequests" type="button">Refresh Requests</button></div></div><p class="fineprint" id="maturityStatus" role="status">Matured packages are credited to Main Wallet when the admin panel processes them.</p>
-    <div id="walletRequestList" class="quicklist"><div class="activityempty">Wallet requests will appear here.</div></div>
-    <div style="border-top:1px solid #303a47;margin-top:22px;padding-top:20px">
-     <div class="eyebrow">ADMIN-ONLY BALANCE ADJUSTMENT</div><h3>Manual Wallet Credit</h3>
-     <p class="desc">Add a BDT amount directly to a selected member's Main Wallet. The saved conversion rate is used only for older wallet records.</p>
-     <label class="field" for="manualCreditMember">SELECT MEMBER ACCOUNT</label><select class="control" id="manualCreditMember"><option value="">Load members first…</option></select>
-     <label class="field" for="manualCreditBDT">CREDIT AMOUNT (BDT ৳)</label><input class="control" id="manualCreditBDT" type="number" min="1" step="1" placeholder="e.g. 1000">
-     <p class="fineprint" id="manualCreditPreview">Select a member and enter a BDT amount to preview the credit.</p>
-     <button class="send" id="manualCreditButton" type="button" style="cursor:pointer;opacity:1">Add Balance to Member Wallet</button>
-     <p class="fineprint" id="manualCreditStatus" role="status">No balance has been changed.</p>
-    </div>
-   </section>
-   <article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">ADMIN-ONLY ACCESS</span></div></article>
+   <section class="panel" id="walletTools" style="grid-column:1/-1;margin-top:4px">
+<div class="eyebrow">PACKAGE & WALLET OPERATIONS</div><h2>Package & Wallet Tools</h2>
+<p class="desc">Deposit and withdrawal settings and request approvals are handled in the separate Wallet Admin Panel.</p>
+<div class="sectionhead"><div><h3>Process 30-Day Packages</h3><p>Credit matured package payouts to member wallets.</p></div><button class="btn" id="processMaturedPackages" type="button">Process 30-Day Packages</button></div>
+<p class="fineprint" id="maturityStatus" role="status">Matured packages are credited to Main Wallet when the admin panel processes them.</p>
+<div style="border-top:1px solid #303a47;margin-top:22px;padding-top:20px">
+<div class="eyebrow">ADMIN-ONLY BALANCE ADJUSTMENT</div><h3>Manual Wallet Credit</h3>
+<p class="desc">Add a BDT amount directly to a selected member's Main Wallet. The saved conversion rate is used only for older wallet records.</p>
+<label class="field" for="manualCreditMember">SELECT MEMBER ACCOUNT</label><select class="control" id="manualCreditMember"><option value="">Load members first…</option></select>
+<label class="field" for="manualCreditBDT">CREDIT AMOUNT (BDT ৳)</label><input class="control" id="manualCreditBDT" type="number" min="1" step="1" placeholder="e.g. 1000">
+<p class="fineprint" id="manualCreditPreview">Select a member and enter a BDT amount to preview the credit.</p>
+<button class="send" id="manualCreditButton" type="button" style="cursor:pointer;opacity:1">Add Balance to Member Wallet</button>
+<p class="fineprint" id="manualCreditStatus" role="status">No balance has been changed.</p></div></section><article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">ADMIN-ONLY ACCESS</span></div></article>
   <section class="panel" id="offerManager" style="grid-column:1/-1;margin-top:4px">
    <div class="eyebrow">PROMOTION MANAGER</div><h2>Create & Manage Offers</h2><p class="desc">Published offers appear on the public Property Zone homepage. Save as draft first or publish immediately.</p>
    <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
@@ -452,26 +427,6 @@ async function loadMembers(){
 }
 document.getElementById("memberSearch").addEventListener("input",renderMembers);
 document.getElementById("refreshMembers").addEventListener("click",loadMembers);
-const walletSettingsStatus=document.getElementById("walletSettingsStatus");
-function walletAdminMessage(message,bad=false){walletSettingsStatus.textContent=message;walletSettingsStatus.style.color=bad?"#ffaaa5":"#91d7ad";}
-async function loadWalletAdminSettings(){
- try{const snap=await getDoc(doc(db,"siteSettings","wallet")),w=snap.exists()?snap.data():{};
-  document.getElementById("depositEnabled").value=w.depositEnabled===true?"on":"off";document.getElementById("withdrawEnabled").value=w.withdrawEnabled===true?"on":"off";
-  document.getElementById("depositBkash").value=w.depositAccounts?.bKash||"";document.getElementById("depositNagad").value=w.depositAccounts?.Nagad||"";document.getElementById("depositRocket").value=w.depositAccounts?.Rocket||"";document.getElementById("depositBank").value=w.depositAccounts?.["Bank Account"]||"";document.getElementById("depositBinance").value=w.depositAccounts?.Binance||"";
-  document.getElementById("withdrawBkash").value=w.withdrawAccounts?.bKash||"";document.getElementById("withdrawNagad").value=w.withdrawAccounts?.Nagad||"";document.getElementById("withdrawRocket").value=w.withdrawAccounts?.Rocket||"";document.getElementById("withdrawBank").value=w.withdrawAccounts?.["Bank Account"]||"";document.getElementById("withdrawBinance").value=w.withdrawAccounts?.Binance||"";
-  document.getElementById("depositOffMessage").value=w.depositMessage||"Deposit is temporarily unavailable. Please check back later.";document.getElementById("withdrawOffMessage").value=w.withdrawMessage||"Withdrawals are temporarily unavailable. Please check back later.";
-  document.getElementById("depositLabelText").value=w.depositLabelText||"Cash In Number";document.getElementById("withdrawLabelText").value=w.withdrawLabelText||"Cash Out Number";
-  document.getElementById("exchangeRateBDT").value=Number(w.exchangeRateBDT||0)||"";document.getElementById("minimumWithdrawBDT").value=Math.max(500,Number(w.minimumWithdrawBDT||500));
-  walletAdminMessage("Wallet settings loaded.");
- }catch(e){walletAdminMessage("Could not load wallet settings: "+e.message,true);}
-}
-document.getElementById("saveWalletSettings").addEventListener("click",async()=>{
- const button=document.getElementById("saveWalletSettings");button.disabled=true;button.textContent="Saving…";const value=id=>document.getElementById(id).value.trim();
- const payload={depositEnabled:value("depositEnabled")==="on",withdrawEnabled:value("withdrawEnabled")==="on",depositAccounts:{bKash:value("depositBkash"),Nagad:value("depositNagad"),Rocket:value("depositRocket"),"Bank Account":value("depositBank"),Binance:value("depositBinance")},withdrawAccounts:{bKash:value("withdrawBkash"),Nagad:value("withdrawNagad"),Rocket:value("withdrawRocket"),"Bank Account":value("withdrawBank"),Binance:value("withdrawBinance")},depositMessage:value("depositOffMessage")||"Deposit is temporarily unavailable. Please check back later.",withdrawMessage:value("withdrawOffMessage")||"Withdrawals are temporarily unavailable. Please check back later.",depositLabelText:value("depositLabelText")||"Cash In Number",withdrawLabelText:value("withdrawLabelText")||"Cash Out Number",exchangeRateBDT:Number(value("exchangeRateBDT")),minimumWithdrawBDT:Math.max(500,Number(value("minimumWithdrawBDT")||500)),updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""};
-  if(!Number.isFinite(payload.exchangeRateBDT)||payload.exchangeRateBDT<=0||!Number.isSafeInteger(payload.minimumWithdrawBDT)||payload.minimumWithdrawBDT<500){walletAdminMessage("Enter a valid saved conversion rate and minimum withdrawal of at least ৳500.",true);button.disabled=false;button.textContent="Save Deposit & Withdraw Settings";return;}
- try{await setDoc(doc(db,"siteSettings","wallet"),payload,{merge:true});walletAdminMessage("Deposit & Withdraw settings saved successfully.");await writeActivity("Updated wallet payment settings","Deposit: "+(payload.depositEnabled?"ON":"OFF")+" · Withdraw: "+(payload.withdrawEnabled?"ON":"OFF"));await loadActivity();}
- catch(e){walletAdminMessage("Could not save wallet settings: "+e.message,true);}finally{button.disabled=false;button.textContent="Save Deposit & Withdraw Settings";}
-});
 async function processMaturedPackages(){
  const button=document.getElementById("processMaturedPackages"),status=document.getElementById("maturityStatus");
  if(button){button.disabled=true;button.textContent="Processing…";}
@@ -506,44 +461,6 @@ async function processMaturedPackages(){
  }catch(e){if(status)status.textContent="Maturity processing failed: "+e.message;}
  finally{if(button){button.disabled=false;button.textContent="Process 30-Day Packages";}}
 }
-async function reviewWalletRequest(item,status,button){
- if(status==="success"&&item.requestType==="wallet-withdraw"&&!confirm("Confirm only after you have actually sent ৳"+Number(item.amountBDT||0).toLocaleString("en-US")+" to the member payout account. This will deduct the amount from their wallet."))return;
- button.disabled=true;button.textContent=status==="success"?"Approving…":"Rejecting…";
- try{
-  const requestRef=doc(db,"propertyEnquiries",item.id),walletRef=doc(db,"wallets",item.uid),settingsRef=doc(db,"siteSettings","wallet");
-  await runTransaction(db,async tx=>{
-   const requestSnap=await tx.get(requestRef);if(!requestSnap.exists())throw new Error("Request no longer exists.");
-   const current=requestSnap.data();if(!["open","pending"].includes(current.status))throw new Error("This request has already been reviewed.");
-   const isWithdraw=current.requestType==="wallet-withdraw",isReserved=isWithdraw&&current.reservedFunds===true;
-   let amountBDT=Number(current.amountBDT);
-   if(status==="success"||isReserved){
-    const settingsSnap=await tx.get(settingsRef),settings=settingsSnap.exists()?settingsSnap.data():{},legacyRate=Number(settings.exchangeRateBDT||0);
-    if(!Number.isFinite(amountBDT)||amountBDT<=0)amountBDT=Number(current.amountUSD||0)*Number(current.exchangeRateBDT||legacyRate);
-    if(!Number.isFinite(amountBDT)||amountBDT<=0)throw new Error("Request has no valid BDT amount or saved conversion rate.");
-    if(status==="success"&&isWithdraw){const minimum=Math.max(500,Number(settings.minimumWithdrawBDT||500));if(amountBDT<minimum)throw new Error("Request is below the current minimum withdrawal.");}
-    if(isWithdraw||current.requestType==="wallet-deposit"){
-     const walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};let balance=Number(wallet.balanceBDT);
-     if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(legacyRate)||legacyRate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*legacyRate*100)/100;}
-     const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0));
-     if(isWithdraw){
-      if(isReserved&&pending+0.000001<amountBDT)throw new Error("Reserved withdrawal amount is inconsistent. Please review the wallet manually.");
-      if(status==="success"&&balance+0.000001<amountBDT)throw new Error("Insufficient BDT wallet balance for this withdrawal.");
-      const nextBalance=status==="success"?Math.round((balance-amountBDT)*100)/100:balance;
-      const nextPending=isReserved?Math.max(0,Math.round((pending-amountBDT)*100)/100):pending;
-      if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,pendingWithdrawalBDT:nextPending,updatedAt:serverTimestamp()});
-      else if(status==="success")throw new Error("Member wallet does not exist.");
-     }else if(status==="success"){
-      const nextBalance=Math.round((balance+amountBDT)*100)/100;
-      if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid:current.uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-     }
-    }
-   }
-   tx.update(requestRef,{status,reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser?.uid||"",reviewedByEmail:auth.currentUser?.email||""});
-  });
-  await writeActivity((status==="success"?"Marked successful ":"Rejected ")+(item.requestType==="wallet-deposit"?"deposit":"withdrawal")+" request",item.email||item.id);
-  await loadWalletRequests();await loadActivity();
- }catch(e){walletAdminMessage("Could not review request: "+e.message,true);button.disabled=false;button.textContent=status==="success"?"Approve":"Reject";}
-}
 function renderManualCreditMembers(){
  const select=document.getElementById("manualCreditMember");if(!select)return;
  const previous=select.value;select.innerHTML='<option value="">Choose a member account…</option>';
@@ -577,17 +494,6 @@ document.getElementById("manualCreditButton").addEventListener("click",async()=>
  }catch(e){messageStatus(status,"Could not add wallet balance: "+e.message,true);}
  finally{button.disabled=false;button.textContent="Add Balance to Member Wallet";}
 });
-async function loadWalletRequests(){
- const target=document.getElementById("walletRequestList");target.innerHTML='<div class="activityempty">Loading wallet requests…</div>';
- try{const snap=await getDocs(collection(db,"propertyEnquiries"));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.requestType==="wallet-deposit"||x.requestType==="wallet-withdraw").sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));target.innerHTML="";
-  if(!rows.length){target.innerHTML='<div class="activityempty">No deposit or withdrawal requests yet.</div>';return;}
-  rows.forEach(item=>{const row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:13px;margin:8px 0;background:#0d131c";const title=document.createElement("strong");title.textContent=(item.requestType==="wallet-deposit"?"DEPOSIT":"WITHDRAW")+" · "+(item.name||item.email||"Member")+(item.amountBDT?" · ৳"+Number(item.amountBDT).toLocaleString("en-US"):" · Legacy request");const detail=document.createElement("p");detail.style.cssText="white-space:pre-wrap;color:#aab6c6;font-size:12px";detail.textContent="Email: "+(item.email||"—")+"\\nMethod: "+(item.paymentMethod||"—")+"\\nMember account: "+(item.walletNumber||item.paymentAccount||"—")+"\\nDeposit to: "+(item.receivingAccount||"—")+"\\nPayout info: "+(item.adminPayoutAccount||"—")+"\\nTransaction ID: "+(item.transactionId||"Not applicable")+"\\nStatus: "+((item.status==="open"||item.status==="pending")?"Pending":item.status==="success"||item.status==="approved"?"Success":item.status||"Pending");row.append(title,detail);
-   if(item.status==="open"||item.status==="pending"){const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";const approve=document.createElement("button");approve.className="btn";approve.type="button";approve.textContent=item.requestType==="wallet-withdraw"?"Confirm Paid & Deduct":"Mark Success";approve.addEventListener("click",()=>reviewWalletRequest(item,"success",approve));const reject=document.createElement("button");reject.className="btn";reject.type="button";reject.textContent="Reject";reject.addEventListener("click",()=>reviewWalletRequest(item,"rejected",reject));actions.append(approve,reject);row.appendChild(actions);}target.appendChild(row);
-  });
- }catch(e){target.innerHTML='<div class="activityempty">Could not load wallet requests: '+String(e.message)+'</div>';}
-}
-document.getElementById("refreshWalletRequests").addEventListener("click",loadWalletRequests);
-document.getElementById("processMaturedPackages").addEventListener("click",processMaturedPackages);
 async function loadSiteSettings(){
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
@@ -678,9 +584,9 @@ async function authorize(user){
  gate.style.display="none";
  loadAdminOverview();
  loadSiteSettings();
- loadWalletAdminSettings();
+
  await processMaturedPackages();
- loadWalletRequests();
+
  loadOffers();
  await addSampleListings(true);
  loadProperties();
