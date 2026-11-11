@@ -73,6 +73,13 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
 <div class="eyebrow">PACKAGE & WALLET OPERATIONS</div><h2>Package & Wallet Tools</h2>
 <p class="desc">Deposit and withdrawal request approvals stay in the separate Wallet Admin Panel. Set the minimum BDT amounts here.</p>
 <div style="border:1px solid #303a47;border-radius:12px;padding:16px;margin:14px 0 20px;background:#0d141e">
+ <div class="eyebrow">PROPERTY PROFIT CONFIGURATION</div><h3>Daily Property Profit Rate</h3>
+ <p class="desc">Applies to all active packages from the saved change time. Previously accrued profit remains unchanged.</p>
+ <label class="field" for="propertyProfitRate">DAILY PROFIT RATE (%)</label>
+ <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input class="control" id="propertyProfitRate" type="number" min="0" max="100" step="0.01" value="2" style="max-width:180px"><button class="send" id="savePropertyProfitRate" type="button" style="width:auto;margin:0;cursor:pointer;opacity:1">Save Property Profit Rate</button></div>
+ <p class="fineprint" id="propertyProfitRateStatus" role="status">Loading current rate…</p>
+</div>
+<div style="border:1px solid #303a47;border-radius:12px;padding:16px;margin:14px 0 20px;background:#0d141e">
  <div class="eyebrow">WALLET LIMITS · BDT ONLY</div><h3>Minimum Deposit & Withdrawal</h3>
  <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
   <div><label class="field" for="minimumDepositBDT">MINIMUM DEPOSIT (৳ BDT)</label><input class="control" id="minimumDepositBDT" type="number" min="1" step="1" inputmode="numeric" placeholder="500"></div>
@@ -436,13 +443,56 @@ async function loadMembers(){
 }
 document.getElementById("memberSearch").addEventListener("input",renderMembers);
 document.getElementById("refreshMembers").addEventListener("click",loadMembers);
+function propertyRateTimeMs(value){
+ if(value&&typeof value.toMillis==="function")return value.toMillis();
+ if(value instanceof Date)return value.getTime();
+ const n=Number(value);return Number.isFinite(n)?n:0;
+}
+function propertyProfitBetween(amount,start,end,history,fallbackRate=0.02){
+ if(!Number.isFinite(amount)||amount<=0||end<=start)return 0;
+ const entries=(Array.isArray(history)?history:[]).map(x=>({rate:Number(x.dailyRate),at:propertyRateTimeMs(x.effectiveAt)})).filter(x=>Number.isFinite(x.rate)&&x.rate>=0&&x.rate<=1).sort((a,b)=>a.at-b.at);
+ let cursor=start,rate=fallbackRate,total=0;
+ for(const entry of entries){
+  if(entry.at<=start){rate=entry.rate;continue;}
+  if(entry.at>=end)break;
+  total+=amount*rate/24*(entry.at-cursor)/3600000;cursor=entry.at;rate=entry.rate;
+ }
+ total+=amount*rate/24*(end-cursor)/3600000;
+ return total;
+}
+async function loadPropertyProfitRate(){
+ const status=document.getElementById("propertyProfitRateStatus");
+ try{
+  const snap=await getDoc(doc(db,"siteSettings","propertyProfit")),s=snap.exists()?snap.data():{};
+  const rate=Number.isFinite(Number(s.dailyRate))?Number(s.dailyRate):0.02;
+  document.getElementById("propertyProfitRate").value=String(rate*100);
+  if(status)status.textContent="Current rate: "+(rate*100)+"% daily. Applies to active packages from each saved change time.";
+ }catch(e){if(status)status.textContent="Could not load property profit rate: "+e.message;}
+}
+document.getElementById("savePropertyProfitRate").addEventListener("click",async()=>{
+ const button=document.getElementById("savePropertyProfitRate"),status=document.getElementById("propertyProfitRateStatus");
+ const percent=Number(document.getElementById("propertyProfitRate").value),nextRate=percent/100;
+ if(!Number.isFinite(percent)||percent<0||percent>100){messageStatus(status,"Enter a daily rate from 0 to 100 percent.",true);return;}
+ button.disabled=true;button.textContent="Saving…";messageStatus(status,"Saving rate and recording the effective time…");
+ try{
+  const ref=doc(db,"siteSettings","propertyProfit"),snap=await getDoc(ref),old=snap.exists()?snap.data():{};
+  const previous=Number.isFinite(Number(old.dailyRate))?Number(old.dailyRate):0.02;
+  let history=Array.isArray(old.history)?old.history.slice():[];
+  if(!history.length)history.push({dailyRate:0.02,effectiveAt:new Date(0)});
+  if(Math.abs(previous-nextRate)>1e-12)history.push({dailyRate:nextRate,effectiveAt:new Date()});
+  await setDoc(ref,{dailyRate:nextRate,history,updatedAt:serverTimestamp()},{merge:true});
+  await writeActivity("Updated Property Profit Rate",(previous*100)+"% → "+(nextRate*100)+"% daily");
+  messageStatus(status,"Saved: "+(nextRate*100)+"% daily. Previous profit is preserved; future profit uses this rate.");
+ }catch(e){messageStatus(status,"Save failed: "+e.message,true);}
+ finally{button.disabled=false;button.textContent="Save Property Profit Rate";}
+});
 async function processMaturedPackages(){
  const button=document.getElementById("processMaturedPackages"),status=document.getElementById("maturityStatus");
  if(button){button.disabled=true;button.textContent="Processing…";}
  if(status)status.textContent="Checking 30-day package maturity…";
  let processed=0,skipped=0;
  try{
-  const snap=await getDocs(collection(db,"activePackages")),settingsRef=doc(db,"siteSettings","wallet");
+  const snap=await getDocs(collection(db,"activePackages")),settingsRef=doc(db,"siteSettings","wallet"),profitSettingsRef=doc(db,"siteSettings","propertyProfit");
   const now=Date.now(),termMs=30*24*60*60*1000;
   for(const item of snap.docs){
    if(item.data().status!=="active")continue;
@@ -453,10 +503,10 @@ async function processMaturedPackages(){
     await runTransaction(db,async tx=>{
      const ps=await tx.get(packageRef);if(!ps.exists())return;
      const p=ps.data(),start=p.startedAt?.toMillis?.();if(p.status!=="active"||!start||Date.now()<start+termMs)return;
-     const settingsSnap=await tx.get(settingsRef),settings=settingsSnap.exists()?settingsSnap.data():{},legacyRate=Number(settings.exchangeRateBDT||0);
+     const [settingsSnap,profitSnap]=await Promise.all([tx.get(settingsRef),tx.get(profitSettingsRef)]),settings=settingsSnap.exists()?settingsSnap.data():{},profitSettings=profitSnap.exists()?profitSnap.data():{},profitHistory=Array.isArray(profitSettings.history)?profitSettings.history:[],legacyRate=Number(settings.exchangeRateBDT||0);
      const principal=Number(p.amountBDT||(Number(p.amountUSD||0)*Number(p.exchangeRateBDT||legacyRate)));
      if(!Number.isFinite(principal)||principal<=0)throw new Error("Invalid package amount or missing saved conversion rate.");
-     const totalEarnings=Math.round(principal*0.02*30*100)/100,alreadyPaid=Math.max(0,Number(p.dailyEarningsPaidBDT||0)),earnings=Math.max(0,Math.round((totalEarnings-alreadyPaid)*100)/100),payout=Math.round((principal+earnings)*100)/100;
+     const totalEarnings=Math.round(propertyProfitBetween(principal,start,start+termMs,profitHistory,Number(p.dailyRate)||0.02)*100)/100,alreadyPaid=Math.max(0,Number(p.dailyEarningsPaidBDT||0)),earnings=Math.max(0,Math.round((totalEarnings-alreadyPaid)*100)/100),payout=Math.round((principal+earnings)*100)/100;
      const ws=await tx.get(walletRef),wallet=ws.exists()?ws.data():{};let balance=Number(wallet.balanceBDT);
      if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(legacyRate)||legacyRate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*legacyRate*100)/100;}
      const nextBalance=Math.round((balance+payout)*100)/100;
@@ -525,7 +575,7 @@ document.getElementById("saveWalletLimits").addEventListener("click",async()=>{
  finally{button.disabled=false;button.textContent="Save Minimum Amounts";}
 });
 async function loadSiteSettings(){
- loadWalletLimits();
+ loadWalletLimits();loadPropertyProfitRate();
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
   if(snap.exists()){
