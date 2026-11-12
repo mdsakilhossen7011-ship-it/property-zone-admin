@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b0f">
+<title>Prologis, Inc. (PLD) — Admin Panel</title>
+<style>
+:root{--bg:#080b10;--surface:#101722;--surface2:#182332;--line:#263447;--gold:#e0b968;--gold2:#ffe2a0;--muted:#91a0b3;--white:#f5f7fb;--green:#8ed7b0}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--white);font:14px/1.5 Inter,ui-sans-serif,system-ui,Arial}
+button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:264px;padding:24px 17px;background:radial-gradient(ellipse at 15% 0%,#1b2939 0%,#0b111a 48%,#090d14 100%);border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:5}.brand{display:flex;align-items:center;gap:11px;padding:2px 9px 28px}.brandmark{width:43px;height:39px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#f1d48c,#9a702d);color:#17130b;font-weight:950;font-size:20px;box-shadow:0 7px 24px #d8b15e22}.brandname{font-weight:850;letter-spacing:1.1px;font-size:14px}.brandname span{color:var(--gold2)}.brandname small{display:block;font-size:9px;color:var(--muted);letter-spacing:2.8px;margin-top:1px}.navlabel{color:#687383;font-size:10px;font-weight:800;letter-spacing:1.7px;padding:13px 12px 8px}.nav a{display:flex;align-items:center;gap:12px;color:#aeb7c4;text-decoration:none;padding:11px 12px;margin:3px 0;border-radius:10px;font-weight:600;transition:.18s}.nav a:hover,.nav a.active{background:linear-gradient(90deg,#3c321e,#1c2632);color:var(--gold2)}.nav .ico{width:22px;text-align:center;font-size:16px}.sidebottom{margin-top:auto;border:1px solid var(--line);border-radius:13px;padding:13px;background:#111720}.sidebottom strong{font-size:12px}.sidebottom p{margin:5px 0 0;color:var(--muted);font-size:11px}.main{margin-left:264px;min-height:100vh}.topbar{height:76px;padding:0 34px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(10,15,23,.94);backdrop-filter:blur(14px);position:sticky;top:0;z-index:4}.crumb{color:var(--muted);font-size:12px}.crumb b{color:var(--white)}.topright{display:flex;align-items:center;gap:12px}.livepill{border:1px solid #334638;color:var(--green);background:#142019;padding:6px 10px;border-radius:30px;font-size:10px;font-weight:800;letter-spacing:.7px}.avatar{width:34px;height:34px;border-radius:11px;background:#302719;color:var(--gold2);display:grid;place-items:center;font-weight:800}.content{max-width:1450px;margin:auto;padding:31px 34px 60px}.welcome{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}.eyebrow{font-size:10px;letter-spacing:2.3px;color:var(--gold);font-weight:850;text-transform:uppercase}.welcome h1{font-size:32px;letter-spacing:-.7px;margin:7px 0 5px}.welcome p{margin:0;color:var(--muted)}.datechip{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 12px;color:#bdc5cf;font-size:11px}.setup{display:flex;gap:13px;align-items:flex-start;padding:15px 17px;border:1px solid #6b542b;background:linear-gradient(100deg,#241d12,#17150f);border-radius:13px;margin-bottom:21px;color:#e9d9b5}.setup .symbol{font-size:19px}.setup strong{display:block;font-size:12px;margin-bottom:3px}.setup p{margin:0;color:#bcae91;font-size:11px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.stat{position:relative;overflow:hidden;box-shadow:0 12px 35px #0003;border:1px solid var(--line);border-radius:14px;padding:17px;background:linear-gradient(145deg,#192637,#101722)}.stat:after{content:"";position:absolute;width:85px;height:85px;border:1px solid #d8b15e18;border-radius:50%;right:-25px;top:-28px;box-shadow:0 0 0 13px #d8b15e08,0 0 0 26px #d8b15e05}.stathead{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px}.staticon{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:#302719;color:var(--gold2);font-size:15px}.statvalue{font-size:27px;font-weight:800;letter-spacing:-.5px;margin:12px 0 3px}.statfoot{font-size:10px;color:#7e8998}.sectionhead{display:flex;justify-content:space-between;align-items:end;margin:29px 0 13px}.sectionhead h2{font-size:16px;margin:0}.sectionhead p{font-size:11px;color:var(--muted);margin:3px 0 0}.tag{font-size:10px;color:var(--gold2);border:1px solid #584729;background:#211b11;padding:5px 8px;border-radius:6px}.modules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.module{border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:17px;display:flex;gap:14px;align-items:flex-start;box-shadow:0 10px 30px #0002;transition:transform .2s,border-color .2s}.module:hover{transform:translateY(-3px);border-color:#8c713f}.moduleicon{width:43px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:11px;background:#272216;color:var(--gold2);font-size:18px}.module h3{margin:1px 0 4px;font-size:13px}.module p{margin:0;color:var(--muted);font-size:11px}.module .state{display:inline-block;margin-top:10px;color:#d9bd7b;background:#282114;border-radius:5px;padding:4px 7px;font-size:9px;font-weight:800;letter-spacing:.5px}.lower{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:15px}.panel{border:1px solid var(--line);box-shadow:0 14px 40px #0003;background:var(--surface);border-radius:14px;padding:19px;scroll-margin-top:90px}.panel h2{font-size:15px;margin:0 0 5px}.panel .desc{font-size:11px;color:var(--muted);margin:0 0 16px}.field{display:block;margin:12px 0 6px;color:#b7c0cb;font-size:11px;font-weight:700}.control{width:100%;background:#0b0f15;color:var(--white);border:1px solid #303a47;border-radius:9px;padding:11px 12px;outline:none}.control:focus{border-color:#9d7b3b}.control::placeholder{color:#626d7b}textarea.control{resize:vertical;min-height:112px}.send{width:100%;margin-top:12px;border:0;border-radius:9px;padding:12px;background:#554628;color:#d8c59c;font-weight:800;opacity:.78;cursor:not-allowed}.fineprint{font-size:10px;color:var(--muted);line-height:1.55;margin:10px 0 0}.activityempty{border:1px dashed #303a47;border-radius:10px;padding:24px 15px;text-align:center;color:var(--muted);font-size:11px}.activityempty b{display:block;color:#c2cbd5;font-size:12px;margin-bottom:4px}.quicklist{display:grid;gap:10px}.quickrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #252d38;font-size:11px;color:#c1c9d3}.quickrow:last-child{border:0}.quickrow span:last-child{color:var(--muted)}footer{border-top:1px solid var(--line);padding-top:17px;margin-top:30px;color:#667180;font-size:10px}.mobilemenu{display:none;border:1px solid var(--line);background:var(--surface);color:var(--gold2);border-radius:8px;padding:7px 10px}
+@media(max-width:1000px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.lower{grid-template-columns:1fr}}
+@media(max-width:700px){.sidebar-close{display:block;margin-left:auto}.sidebar{width:264px;transform:translateX(-100%);transition:transform .22s ease;box-shadow:15px 0 40px #0008}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.topbar{height:62px;padding:0 15px}.mobilemenu{display:block}.content{padding:23px 15px 45px}.welcome{align-items:flex-start;flex-direction:column}.welcome h1{font-size:25px}.datechip{display:none}.modules{grid-template-columns:1fr}.stats{gap:9px}.stat{padding:13px}.statvalue{font-size:23px}.stathead{font-size:10px}.topright{gap:8px}.livepill{font-size:9px}.setup{padding:12px}.sectionhead{margin-top:24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMenu()" aria-hidden="true"></div>
+<aside class="sidebar" id="sidebar">
+ <div class="brand"><div class="brandmark">P</div><div class="brandname">PROLOGIS, INC. <span>(PLD)</span><small>ADMIN CONTROL ROOM</small></div><button class="sidebar-close" type="button" onclick="closeMenu()" aria-label="Close menu">×</button></div>
+ <nav class="nav">
+  <div class="navlabel">WORKSPACE</div>
+  <a class="active" href="#overview" onclick="activate(this)"><span class="ico">◈</span>Overview</a>
+  <div class="navlabel">MANAGE YOUR PLATFORM</div>
+  <a href="#members" onclick="activate(this)"><span class="ico">♙</span>Members</a>
+  <a href="#properties" onclick="activate(this)"><span class="ico">⌂</span>Properties</a>
+  <a href="#offers" onclick="activate(this)"><span class="ico">✧</span>Offers & Promotions</a>
+  <a href="#walletTools" onclick="activate(this)"><span class="ico">◇</span>Package & Wallet Tools</a>
+  <a href="#notices" onclick="activate(this)"><span class="ico">▤</span>Send Notice</a>
+  <a href="#commission" onclick="activate(this)"><span class="ico">◇</span>Referrals & Commission</a>
+  <div class="navlabel">INSIGHTS & SYSTEM</div>
+  <a href="#activity" onclick="activate(this)"><span class="ico">◷</span>Activity Log</a>
+  <a href="#settings" onclick="activate(this)"><span class="ico">⚙</span>Website Settings</a>
+  <a href="https://admin.prologisincpld.com/chat.html"><span class="ico">✉</span>Live Support Inbox ↗</a>
+ </nav>
+ <div class="sidebottom"><strong>◉ &nbsp; Prologis, Inc. (PLD)</strong><p>Admin workspace display name.</p></div>
+</aside>
+<main class="main">
+ <header class="topbar"><div class="topright"><button class="mobilemenu" onclick="toggleMenu()">☰</button><span class="crumb">Prologis, Inc. (PLD) &nbsp;/&nbsp; <b>Overview</b></span></div><div class="topright"><span class="livepill">● &nbsp; CONTROL PANEL</span><div class="avatar">A</div></div></header>
+ <div class="content" id="overview">
+  <div class="welcome"><div><div class="eyebrow">PROLOGIS, INC. (PLD) / ADMINISTRATION</div><h1>Your command centre</h1><p>A sharper workspace for managing your property ecosystem.</p></div><div class="datechip">✦ &nbsp; ESTATE COMMAND · 01</div></div>
+  <div class="setup"><div class="symbol">✓</div><div><strong>Secure admin workspace</strong><p>Admin access is verified with Firebase Authentication and the Firestore admin role. Live records and publishing controls load after successful verification.</p></div></div>
+  <div class="stats">
+   <div class="stat"><div class="stathead">TOTAL MEMBERS <span class="staticon">♙</span></div><div class="statvalue" id="adminTotalMembers">—</div><div class="statfoot">Registered member accounts</div></div>
+   <div class="stat"><div class="stathead">PROPERTY LISTINGS <span class="staticon">⌂</span></div><div class="statvalue" id="adminPropertyCount">—</div><div class="statfoot">Published and draft listings</div></div>
+   <div class="stat"><div class="stathead">ACTIVE OFFERS <span class="staticon">✧</span></div><div class="statvalue" id="adminOfferCount">—</div><div class="statfoot">Currently published offers</div></div>
+   <div class="stat"><div class="stathead">NOTICE POSTS <span class="staticon">▤</span></div><div class="statvalue" id="adminNoticeCount">—</div><div class="statfoot">All published and saved notices</div></div>
+  </div>
+  <div class="sectionhead"><div><h2>Your workspace</h2><p>Every essential control, organised in one place</p></div><span class="tag">CONTROL SUITE</span></div>
+  <div class="modules">
+   <article class="module" id="members"><div class="moduleicon">♙</div><div><h3>Member Management</h3><p>Review member accounts and manage account status with admin-only permissions.</p><span class="state">FIRESTORE CONNECTED</span></div></article>
+  <section class="panel" id="memberManager" style="grid-column:1/-1;margin-top:4px">
+   <div class="eyebrow">MEMBER DIRECTORY</div><h2>Registered Members</h2>
+   <div style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0"><input class="control" id="memberSearch" type="search" placeholder="Search by member email..." style="flex:1;min-width:180px"><button class="btn" id="refreshMembers" type="button">Refresh Members</button></div>
+   <p class="fineprint" id="memberStatus" role="status">Loading members…</p>
+   <div id="memberList" class="quicklist"></div>
+  </section>
+   <article class="module" id="properties"><div class="moduleicon">⌂</div><div><h3>Property Moderation</h3><p>Review submitted properties and approve or reject listings.</p><span class="state">FIRESTORE CONNECTED</span></div></article><section class="panel" id="propertyManager" style="grid-column:1/-1;margin-top:4px">
+ <div class="eyebrow">PROPERTY LISTING MANAGER</div><h2>Add & Manage Properties</h2><p class="desc">Add verified property information here. Published listings appear on the public Property Zone website.</p>
+ <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+  <div><label class="field" for="propertyTitle">PROPERTY NAME *</label><input class="control" id="propertyTitle" maxlength="100" placeholder="e.g. Modern family apartment">
+   <label class="field" for="propertyLocation">LOCATION *</label><input class="control" id="propertyLocation" maxlength="140" placeholder="Area, city">
+   <label class="field" for="propertyType">PROPERTY TYPE *</label><select class="control" id="propertyType"><option value="Apartment">Apartment</option><option value="House">House</option><option value="Land">Land</option><option value="Commercial">Commercial</option><option value="Office">Office</option><option value="Other">Other</option></select><label class="field" for="propertyAvailability">LISTING AVAILABILITY *</label><select class="control" id="propertyAvailability"><option value="Available">Available</option><option value="Upcoming">Upcoming</option><option value="Sold">Sold</option></select></div>
+  <div><label class="field" for="propertyPrice">PRICE / PRICE RANGE *</label><input class="control" id="propertyPrice" maxlength="70" placeholder="e.g. ৳85,00,000 or Contact for price">
+   <label class="field" for="propertyImage">IMAGE URL (OPTIONAL)</label><input class="control" id="propertyImage" type="url" placeholder="https://example.com/property.jpg"><label class="field" for="propertyImageFile">OR UPLOAD PROPERTY IMAGE (MAX 5 MB)</label><input class="control" id="propertyImageFile" type="file" accept="image/jpeg,image/png,image/webp">
+   <label class="field" for="propertyDescription">DESCRIPTION *</label><textarea class="control" id="propertyDescription" maxlength="1200" placeholder="Write accurate property details..."></textarea></div>
+ </div><div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0"><button class="btn" id="addSampleProperties" type="button">Add 10 sample listings</button><button class="btn" id="deleteSampleProperties" type="button">Delete all sample listings</button></div><p class="fineprint">Illustrative sample content only, not verified real estate offers. Public cards will be labelled Sample listing.</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="send" id="savePropertyDraft" type="button" style="width:auto;flex:1;cursor:pointer;opacity:1">Save as Draft</button><button class="send" id="publishProperty" type="button" style="width:auto;flex:1;cursor:pointer;opacity:1;background:linear-gradient(120deg,#f1d48c,#b58a42);color:#17130b">Publish Property</button></div>
+ <p class="fineprint" id="propertyStatus" role="status">Property records require admin-only write access and public read access for published listings.</p>
+ <div class="sectionhead"><div><h2>Property Records</h2><p>Publish, unpublish or delete a listing</p></div><button class="btn" id="refreshProperties" type="button">Refresh</button></div><div id="propertyList" class="quicklist"><div class="activityempty">Loading properties…</div></div>
+</section>
+  <section class="panel" id="memberInbox" style="grid-column:1/-1;margin-top:4px"><div class="eyebrow">MEMBER COMMUNICATION</div><h2>Property Enquiries & Support Inbox</h2><div class="sectionhead"><div><h3>Property Enquiries</h3></div><button class="btn" id="refreshEnquiries" type="button">Refresh</button></div><div id="enquiryList" class="quicklist"></div><div class="sectionhead"><div><h3>Support Requests</h3></div><button class="btn" id="refreshSupport" type="button">Refresh</button></div><div id="supportList" class="quicklist"></div><div class="sectionhead"><div><h3>Member Property Submissions</h3></div><button class="btn" id="refreshSubmissions" type="button">Refresh</button></div><div id="submissionList" class="quicklist"></div></section>
+  
+   <section class="panel" id="walletTools" style="grid-column:1/-1;margin-top:4px">
+<div class="eyebrow">PACKAGE & WALLET OPERATIONS</div><h2>Package & Wallet Tools</h2>
+<p class="desc">Deposit and withdrawal request approvals stay in the separate Wallet Admin Panel. Set the minimum BDT amounts here.</p>
+<div style="border:1px solid #303a47;border-radius:12px;padding:16px;margin:14px 0 20px;background:#0d141e">
+ <div class="eyebrow">PAYMENT ACCOUNT NUMBERS</div><h3>Deposit & Withdrawal Accounts</h3>
+ <p class="desc">Change the account details shown to members. Existing wallet limits and profit settings are not changed here.</p>
+ <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+  <div><h3>Deposit Accounts</h3>
+   <label class="field" for="depositBkash">bKASH NUMBER</label><input class="control" id="depositBkash" maxlength="40" placeholder="01XXXXXXXXX">
+   <label class="field" for="depositNagad">NAGAD NUMBER</label><input class="control" id="depositNagad" maxlength="40" placeholder="01XXXXXXXXX">
+   <label class="field" for="depositRocket">ROCKET NUMBER</label><input class="control" id="depositRocket" maxlength="40" placeholder="Rocket account number">
+   <label class="field" for="depositBinance">BINANCE PAY ID / UID</label><input class="control" id="depositBinance" maxlength="100" placeholder="Binance Pay ID / UID">
+   <label class="field" for="depositBank">BANK ACCOUNT DETAILS</label><input class="control" id="depositBank" maxlength="150" placeholder="Bank name, account name and number">
+  </div>
+  <div><h3>Withdrawal Accounts</h3>
+   <label class="field" for="withdrawBkash">bKASH PAYOUT NUMBER / INFO</label><input class="control" id="withdrawBkash" maxlength="100" placeholder="bKash payout details">
+   <label class="field" for="withdrawNagad">NAGAD PAYOUT NUMBER / INFO</label><input class="control" id="withdrawNagad" maxlength="100" placeholder="Nagad payout details">
+   <label class="field" for="withdrawRocket">ROCKET PAYOUT NUMBER / INFO</label><input class="control" id="withdrawRocket" maxlength="100" placeholder="Rocket payout details">
+   <label class="field" for="withdrawBinance">BINANCE PAY ID / UID</label><input class="control" id="withdrawBinance" maxlength="100" placeholder="Binance Pay ID / UID">
+   <label class="field" for="withdrawBank">BANK ACCOUNT DETAILS</label><input class="control" id="withdrawBank" maxlength="150" placeholder="Bank name, account name and number">
+  </div>
+ </div>
+ <button class="send" id="savePaymentAccounts" type="button" style="cursor:pointer;opacity:1">Save Payment Account Numbers</button>
+ <p class="fineprint" id="paymentAccountsStatus" role="status">Loading saved account numbers…</p>
+</div>
+<div style="border:1px solid #303a47;border-radius:12px;padding:16px;margin:14px 0 20px;background:#0d141e">
+ <div class="eyebrow">PROPERTY PROFIT CONFIGURATION</div><h3>Daily Property Profit Rate</h3>
+ <p class="desc">Applies to all active packages from the saved change time. Previously accrued profit remains unchanged.</p>
+ <label class="field" for="propertyProfitRate">DAILY PROFIT RATE (%)</label>
+ <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input class="control" id="propertyProfitRate" type="number" min="0" max="100" step="0.01" value="2" style="max-width:180px"><button class="send" id="savePropertyProfitRate" type="button" style="width:auto;margin:0;cursor:pointer;opacity:1">Save Property Profit Rate</button></div>
+ <p class="fineprint" id="propertyProfitRateStatus" role="status">Loading current rate…</p>
+</div>
+<div style="border:1px solid #303a47;border-radius:12px;padding:16px;margin:14px 0 20px;background:#0d141e">
+ <div class="eyebrow">WALLET LIMITS · BDT ONLY</div><h3>Minimum Deposit & Withdrawal</h3>
+ <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+  <div><label class="field" for="minimumDepositBDT">MINIMUM DEPOSIT (৳ BDT)</label><input class="control" id="minimumDepositBDT" type="number" min="1" step="1" inputmode="numeric" placeholder="500"></div>
+  <div><label class="field" for="minimumWithdrawBDT">MINIMUM WITHDRAWAL (৳ BDT)</label><input class="control" id="minimumWithdrawBDT" type="number" min="1" step="1" inputmode="numeric" placeholder="500"></div>
+ </div>
+ <button class="send" id="saveWalletLimits" type="button" style="cursor:pointer;opacity:1">Save Minimum Amounts</button>
+ <p class="fineprint" id="walletLimitsStatus" role="status">Default minimum: ৳500 each until changed.</p>
+</div>
+<div class="sectionhead"><div><h3>Process 30-Day Packages</h3><p>Credit matured package payouts to member wallets.</p></div><button class="btn" id="processMaturedPackages" type="button">Process 30-Day Packages</button></div>
+<p class="fineprint" id="maturityStatus" role="status">Matured packages are credited to Main Wallet when the admin panel processes them.</p>
+<div style="border-top:1px solid #303a47;margin-top:22px;padding-top:20px">
+<div class="eyebrow">ADMIN-ONLY BALANCE ADJUSTMENT</div><h3>Manual Wallet Credit</h3>
+<p class="desc">Add a BDT amount directly to a selected member's Main Wallet. The saved conversion rate is used only for older wallet records.</p>
+<label class="field" for="manualCreditMember">SELECT MEMBER ACCOUNT</label><select class="control" id="manualCreditMember"><option value="">Load members first…</option></select>
+<label class="field" for="manualCreditBDT">CREDIT AMOUNT (BDT ৳)</label><input class="control" id="manualCreditBDT" type="number" min="1" step="1" placeholder="e.g. 1000">
+<p class="fineprint" id="manualCreditPreview">Select a member and enter a BDT amount to preview the credit.</p>
+<button class="send" id="manualCreditButton" type="button" style="cursor:pointer;opacity:1">Add Balance to Member Wallet</button>
+<p class="fineprint" id="manualCreditStatus" role="status">No balance has been changed.</p></div></section><article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">ADMIN-ONLY ACCESS</span></div></article>
+  <section class="panel" id="offerManager" style="grid-column:1/-1;margin-top:4px">
+   <div class="eyebrow">PROMOTION MANAGER</div><h2>Create & Manage Offers</h2><p class="desc">Published offers appear on the public Property Zone homepage. Save as draft first or publish immediately.</p>
+   <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+    <div>
+     <label class="field" for="offerTitle">OFFER TITLE *</label><input class="control" id="offerTitle" maxlength="90" placeholder="e.g. Special property launch offer">
+     <label class="field" for="offerImage">IMAGE URL (OPTIONAL)</label><input class="control" id="offerImage" type="url" placeholder="https://example.com/offer.jpg">
+     <label class="field" for="offerButtonText">BUTTON TEXT (OPTIONAL)</label><input class="control" id="offerButtonText" maxlength="30" placeholder="Learn more">
+    </div>
+    <div>
+     <label class="field" for="offerDescription">OFFER DETAILS *</label><textarea class="control" id="offerDescription" maxlength="700" placeholder="Write the offer details..."></textarea>
+     <label class="field" for="offerButtonUrl">BUTTON LINK (OPTIONAL)</label><input class="control" id="offerButtonUrl" type="url" placeholder="https://example.com/details">
+    </div>
+   </div>
+   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+    <button class="send" id="saveOfferDraft" type="button" style="width:auto;flex:1;cursor:pointer;opacity:1;margin:0">Save as Draft</button>
+    <button class="send" id="publishOffer" type="button" style="width:auto;flex:1;cursor:pointer;opacity:1;margin:0;background:linear-gradient(120deg,#f1d48c,#b58a42);color:#17130b">Publish Offer</button>
+   </div>
+   <p class="fineprint" id="offerStatus" role="status">Create, edit and publish offers. Changes are recorded in the admin activity log.</p>
+   <div class="sectionhead"><div><h2>Existing Offers</h2><p>Manage published offers and drafts</p></div><button class="btn" id="refreshOffers" type="button">Refresh</button></div>
+   <div id="offerList" class="quicklist"><div class="activityempty">Loading offers after admin sign-in…</div></div>
+  </section>
+   <article class="module" id="commission"><div class="moduleicon">◇</div><div><h3>Referrals & Commission</h3><p>Review registered referral signups and manage the commission rate. Payouts require eligible transaction records.</p><span class="state">REFERRAL TRACKING ACTIVE · PAYOUTS PENDING</span></div></article>
+<section class="panel" id="commissionManager" style="grid-column:1/-1;margin-top:4px"><div class="eyebrow">PARTNER PROGRAM</div><h2>Referral & Commission Manager</h2><p class="desc">Set the commission rate and review referral activity. Payouts remain pending until eligible transactions are connected.</p><label class="field" for="commissionRate">COMMISSION RATE (%)</label><div style="display:flex;gap:10px;flex-wrap:wrap"><input class="control" id="commissionRate" type="number" min="0" max="100" step="0.5" value="10" style="max-width:180px"><button class="send" id="saveCommissionRate" type="button" style="width:auto;margin:0;cursor:pointer;opacity:1">Save Rate</button><button class="btn" id="refreshReferrals" type="button" onclick="window.pzRefreshReferrals&&window.pzRefreshReferrals()">Refresh Referrals</button></div><p class="fineprint" id="commissionStatus" role="status">Default rate: 10%. Save to apply.</p><div class="stats" style="margin-top:14px"><div class="stat"><div class="stathead">TOTAL REFERRALS</div><div class="statvalue" id="referralCount">0</div></div><div class="stat"><div class="stathead">ACTIVE REFERRED MEMBERS</div><div class="statvalue" id="activeReferralCount">0</div></div></div><div class="sectionhead"><div><h2>Referral Records</h2><p>Members grouped by the referral code they entered</p></div></div><div id="referralList" class="quicklist"><div class="activityempty">Referral records will appear here.</div></div></section>
+  </div>
+  <section class="panel" id="settings" style="margin-top:18px">
+   <div class="eyebrow">PLATFORM CONFIGURATION</div><h2>Website Settings</h2><p class="desc">Update the public website identity and contact details. Changes are saved to Firebase when the database rules allow admin access.</p>
+   <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+    <div><label class="field" for="siteName">WEBSITE NAME</label><input class="control" id="siteName" maxlength="80" placeholder="Property Zone">
+     <label class="field" for="siteLogo">LOGO IMAGE URL</label><input class="control" id="siteLogo" type="url" placeholder="https://example.com/logo.png">
+     <label class="field" for="siteFavicon">FAVICON IMAGE URL</label><input class="control" id="siteFavicon" type="url" placeholder="https://example.com/favicon.ico">
+    </div>
+    <div><label class="field" for="siteDescription">WEBSITE DESCRIPTION</label><textarea class="control" id="siteDescription" maxlength="500" placeholder="Describe your Property Zone website..."></textarea>
+     <label class="field" for="siteContact">CONTACT EMAIL</label><input class="control" id="siteContact" type="email" placeholder="support@example.com">
+     <label class="field" for="sitePhone">CONTACT PHONE (OPTIONAL)</label><input class="control" id="sitePhone" type="tel" maxlength="30" placeholder="+880...">
+    </div>
+   </div>
+   <button class="send" id="saveSiteSettings" type="button" style="cursor:pointer;opacity:1">Save Website Settings</button>
+   <p class="fineprint" id="settingsStatus" role="status">Logo and favicon URL changes are applied to the public website after refresh. Direct file upload is not enabled.</p>
+  </section>
+  <div class="lower">
+   <section class="panel" id="notices"><div class="eyebrow">MEMBER COMMUNICATION</div><h2>Broadcast centre</h2><p class="desc">Compose an announcement for the Property Zone community.</p>
+    <label class="field" for="noticeTitle">NOTICE TITLE</label><input class="control" id="noticeTitle" maxlength="100" placeholder="e.g. Important platform update">
+    <label class="field" for="noticeMessage">MESSAGE</label><textarea class="control" id="noticeMessage" maxlength="2000" placeholder="Write your announcement here..."></textarea>
+    <label class="field" for="noticeAudience">RECIPIENTS</label><select class="control" id="noticeAudience"><option value="all">All members</option><option value="active">Active members only</option></select>
+    <button class="send" id="sendNoticeButton" type="button" style="cursor:pointer;opacity:1">Publish Notice</button>
+    <p class="fineprint" id="noticeStatus" role="status">Notices will appear in the signed-in member dashboard after publishing.</p>
+    <div class="sectionhead"><div><h2>Published Notices</h2><p>Recent member announcements</p></div><button class="btn" id="refreshNotices" type="button">Refresh</button></div>
+    <div id="noticeList" class="quicklist"><div class="activityempty">No notices loaded.</div></div>
+   </section>
+   <section class="panel" id="activity"><div class="eyebrow">SYSTEM MONITOR</div><h2>System pulse</h2><p class="desc">Connection and activity overview</p><div class="quicklist" id="activityList"><div class="activityempty">Loading admin activity…</div></div><p class="fineprint" id="activityStatus" role="status">Admin actions are recorded here.</p><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn" id="refreshActivity" type="button">Refresh Activity</button></div></section>
+  </div>
+  <footer>PROLOGIS, INC. (PLD) · ADMIN PANEL &nbsp;—&nbsp; Access is protected by Firebase Authentication and Firestore admin-role verification.</footer>
+ </div>
+</main>
+</div>
+<script>
+function setMenuOpen(open){
+ const sidebar=document.getElementById("sidebar"),backdrop=document.getElementById("sidebarBackdrop");
+ sidebar.classList.toggle("open",open);
+ backdrop.classList.toggle("show",open);
+ document.body.classList.toggle("menu-open",open);
+}
+function toggleMenu(){
+ const open=!document.getElementById("sidebar").classList.contains("open");
+ if(open){history.pushState({adminMenuOpen:true},"","#admin-menu");setMenuOpen(true);}
+ else closeMenu();
+}
+function closeMenu(fromPop=false){
+ const open=document.getElementById("sidebar").classList.contains("open");
+ if(!open)return;
+ setMenuOpen(false);
+ if(!fromPop&&history.state?.adminMenuOpen)history.back();
+}
+function activate(link){
+ document.querySelectorAll(".nav a").forEach(a=>a.classList.remove("active"));
+ link.classList.add("active");
+ closeMenu();
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
+window.addEventListener("popstate",()=>{if(document.getElementById("sidebar").classList.contains("open"))closeMenu(true);});
+</script>
+
+<style>
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:#0009;z-index:4}.sidebar-backdrop.show{display:block}.sidebar-close{display:none;border:1px solid #354153;background:#111a25;color:#ffe2a0;border-radius:9px;font-size:25px;line-height:1;padding:3px 10px;cursor:pointer}.menu-open{overflow:hidden}
+#adminLoginGate{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 0%,#1c2a3c,#080b10 68%)}
+#adminLoginGate .loginbox{width:min(100%,410px);border:1px solid #3b4655;border-radius:18px;padding:28px;background:#101722;box-shadow:0 25px 90px #0009}
+#adminLoginGate .loginbrand{color:#ffe2a0;font-weight:900;letter-spacing:1.5px;font-size:13px}
+#adminLoginGate h1{font-size:25px;margin:17px 0 5px}
+#adminLoginGate p{color:#91a0b3;font-size:12px;margin:0 0 20px}
+#adminLoginGate label{display:block;color:#b7c0cb;font-size:11px;font-weight:700;margin:13px 0 6px}
+#adminLoginGate input{width:100%;padding:12px;border:1px solid #303a47;border-radius:9px;background:#090e15;color:#fff;outline:none}
+#adminLoginGate input:focus{border-color:#d0a95f}
+#adminLoginGate button{width:100%;padding:12px;border:0;border-radius:9px;background:linear-gradient(120deg,#f1d48c,#b58a42);color:#17130b;font-weight:900;margin-top:17px}
+#adminLoginGate button:disabled{opacity:.6}
+#adminLoginError{color:#ffaaa5!important;min-height:18px;margin:12px 0 0!important}
+body:not(.admin-authorized) .sidebar,body:not(.admin-authorized) .main{visibility:hidden}
+</style>
+<div id="adminLoginGate">
+ <form class="loginbox" id="adminLoginForm">
+  <div class="loginbrand">PROLOGIS, INC. (PLD) · ADMIN</div>
+  <h1>Admin sign in</h1>
+  <p>Sign in with your authorized administrator account.</p>
+  <label for="adminEmail">ADMIN EMAIL</label>
+  <input id="adminEmail" type="email" autocomplete="username" required placeholder="Enter your admin email">
+  <label for="adminPassword">PASSWORD</label>
+  <input id="adminPassword" type="password" autocomplete="current-password" required placeholder="Enter your password">
+  <button id="adminLoginButton" type="submit">Secure Login</button>
+  <p id="adminLoginError" role="alert"></p>
+ </form>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
+const firebaseConfig = {
+ apiKey:"AIzaSyDRLWFf4ISfQdoZp7JaQAWwwKCoL_aV6No",
+ authDomain:"property-zone-17121.firebaseapp.com",
+ projectId:"property-zone-17121",
+ storageBucket:"property-zone-17121.firebasestorage.app",
+ messagingSenderId:"631227640032",
+ appId:"1:631227640032:web:855536883072ccfe3b8885"
+};
+const ADMIN_ACCOUNTS = new Map([
+ ["Ry06huUzzmeqryzna9lPzpNw4Rr1","ridoyhasank5434@gmail.com"],
+ ["bSOdvUtNO4Vxl3lJBuFA2xiREP53","prologisinvest@gmail.com"]
+]);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+await setPersistence(auth, browserLocalPersistence);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const gate = document.getElementById("adminLoginGate");
+const form = document.getElementById("adminLoginForm");
+const errorBox = document.getElementById("adminLoginError");
+const loginButton = document.getElementById("adminLoginButton");
+const settingsButton = document.getElementById("saveSiteSettings");
+const settingsStatus = document.getElementById("settingsStatus");
+const offerStatus=document.getElementById("offerStatus");
+const offerList=document.getElementById("offerList");
+const memberStatus=document.getElementById("memberStatus");
+const memberList=document.getElementById("memberList");
+let memberRecords=[];
+const commissionStatus=document.getElementById("commissionStatus"),referralList=document.getElementById("referralList");
+const noticeStatus=document.getElementById("noticeStatus"),noticeList=document.getElementById("noticeList"),activityList=document.getElementById("activityList"),activityStatus=document.getElementById("activityStatus");
+async function writeActivity(action,details=""){try{await addDoc(collection(db,"activityLogs"),{action,details,adminUid:auth.currentUser?.uid||"",adminEmail:auth.currentUser?.email||"",createdAt:serverTimestamp()});}catch(e){console.warn("Activity log write failed:",e.message);}}
+async function loadAdminOverview(){
+ const ids=["adminTotalMembers","adminPropertyCount","adminOfferCount","adminNoticeCount"];
+ try{
+  const [members,properties,offers,notices]=await Promise.all([
+   getDocs(collection(db,"members")),
+   getDocs(collection(db,"properties")),
+   getDocs(collection(db,"offers")),
+   getDocs(collection(db,"notices"))
+  ]);
+  document.getElementById(ids[0]).textContent=String(members.size);
+  document.getElementById(ids[1]).textContent=String(properties.size);
+  document.getElementById(ids[2]).textContent=String(offers.docs.filter(d=>d.data().status==="published").length);
+  document.getElementById(ids[3]).textContent=String(notices.size);
+ }catch(e){
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="—";});
+  console.warn("Admin overview could not load:",e.message);
+ }
+}
+function messageStatus(el,msg,bad=false){if(!el)return;el.textContent=msg;el.style.color=bad?"#ffaaa5":"#91d7ad";}
+let editingNoticeId=null;
+async function loadNotices(){noticeList.innerHTML='<div class="activityempty">Loading notices…</div>';try{const snap=await getDocs(collection(db,"notices"));const docs=snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0));noticeList.innerHTML="";if(!docs.length){noticeList.innerHTML='<div class="activityempty">No notices published yet.</div>';return;}docs.forEach(d=>{const n=d.data(),row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:10px;padding:12px;margin:7px 0";const title=document.createElement("strong");title.textContent=n.title||"Untitled notice";const msg=document.createElement("p");msg.style.cssText="white-space:pre-wrap;color:#91a0b3;font-size:11px;margin:6px 0";msg.textContent=n.message||"";const meta=document.createElement("div");meta.className="fineprint";meta.textContent="Audience: "+(n.audience||"all")+" · "+(n.status||"published");const edit=document.createElement("button");edit.className="btn";edit.type="button";edit.textContent="Edit";edit.style.marginTop="8px";edit.addEventListener("click",()=>{editingNoticeId=d.id;document.getElementById("noticeTitle").value=n.title||"";document.getElementById("noticeMessage").value=n.message||"";document.getElementById("noticeAudience").value=n.audience||"all";document.getElementById("sendNoticeButton").textContent="Update Notice";messageStatus(noticeStatus,"Editing: "+(n.title||"notice"));document.getElementById("noticeTitle").focus();});
+ const del=document.createElement("button");del.className="btn";del.type="button";del.textContent="Delete";del.style.cssText="margin-top:8px;color:#ffaaa5";del.addEventListener("click",async()=>{if(!confirm("এই নোটিশটি মুছে ফেলবে?"))return;del.disabled=true;try{await deleteDoc(doc(db,"notices",d.id));if(editingNoticeId===d.id){editingNoticeId=null;document.getElementById("noticeTitle").value="";document.getElementById("noticeMessage").value="";document.getElementById("sendNoticeButton").textContent="Publish Notice";}await writeActivity("Deleted notice",n.title||d.id);await loadNotices();await loadAdminOverview();messageStatus(noticeStatus,"Notice deleted.");}catch(e){messageStatus(noticeStatus,"Delete failed: "+e.message,true);del.disabled=false;}});row.append(title,msg,meta,edit,del);noticeList.appendChild(row);});}catch(e){noticeList.innerHTML='<div class="activityempty">Could not load notices. Check Firestore Rules.</div>';messageStatus(noticeStatus,"Notice load failed: "+e.message,true);}}
+async function loadActivity(){activityList.innerHTML='<div class="activityempty">Loading activity…</div>';try{const snap=await getDocs(collection(db,"activityLogs"));const docs=snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0)).slice(0,50);activityList.innerHTML="";if(!docs.length){activityList.innerHTML='<div class="activityempty"><b>No activity recorded yet</b>Admin actions will appear here.</div>';return;}docs.forEach(d=>{const a=d.data(),row=document.createElement("div");row.className="quickrow";const left=document.createElement("div");const strong=document.createElement("strong");strong.textContent=a.action||"Admin action";const detail=document.createElement("div");detail.className="fineprint";detail.textContent=(a.details||"")+(a.adminEmail?" · "+a.adminEmail:"");left.append(strong,detail);const date=document.createElement("span");date.textContent=a.createdAt?.toDate?a.createdAt.toDate().toLocaleString():"Just now";row.append(left,date);activityList.appendChild(row);});messageStatus(activityStatus,"Showing latest "+docs.length+" activity records.");}catch(e){activityList.innerHTML='<div class="activityempty">Could not load activity. Check Firestore Rules.</div>';messageStatus(activityStatus,"Activity load failed: "+e.message,true);}}
+document.getElementById("sendNoticeButton").addEventListener("click",async()=>{const title=document.getElementById("noticeTitle").value.trim(),message=document.getElementById("noticeMessage").value.trim(),audience=document.getElementById("noticeAudience").value;if(!title||!message){messageStatus(noticeStatus,"Notice title এবং message দুটোই দিতে হবে।",true);return;}const b=document.getElementById("sendNoticeButton"),wasEditing=!!editingNoticeId;b.disabled=true;b.textContent=wasEditing?"Updating…":"Publishing…";try{const count=await getDocs(collection(db,"members"));const recipients=count.docs.filter(x=>audience==="all"||x.data().status==="active").length;if(wasEditing){await updateDoc(doc(db,"notices",editingNoticeId),{title,message,audience,recipientCount:recipients,updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""});await writeActivity("Updated notice",title+" · "+recipients+" recipient(s)");}else{await addDoc(collection(db,"notices"),{title,message,audience,status:"published",recipientCount:recipients,createdAt:serverTimestamp(),createdBy:auth.currentUser?.uid||"",createdByEmail:auth.currentUser?.email||""});await writeActivity("Published notice",title+" · "+recipients+" recipient(s)");}editingNoticeId=null;document.getElementById("noticeTitle").value="";document.getElementById("noticeMessage").value="";messageStatus(noticeStatus,wasEditing?"Notice updated.":"Notice published for "+recipients+" member(s).");await loadNotices();await loadActivity();await loadAdminOverview();}catch(e){messageStatus(noticeStatus,"Save failed: "+e.message,true);}finally{b.disabled=false;b.textContent="Publish Notice";}});
+document.getElementById("refreshNotices").addEventListener("click",loadNotices);document.getElementById("refreshActivity").addEventListener("click",loadActivity);
+function commissionMessage(s,bad=false){commissionStatus.textContent=s;commissionStatus.style.color=bad?"#ffaaa5":"#91d7ad";}
+async function loadReferrals(){
+ referralList.innerHTML='<div class="activityempty">Loading referral records…</div>';
+ try{
+  const [ms,ss]=await Promise.all([getDocs(collection(db,"members")),getDoc(doc(db,"referralSettings","general"))]);
+  const members=ms.docs.map(d=>({uid:d.id,...d.data()}));
+  const codeSyncResults=await Promise.all(members.map(async member=>{
+   const code=String(member.referralCode||"").trim().toUpperCase();
+   if(!code)return {skipped:true};
+   try{
+    const codeRef=doc(db,"referralCodes",code),codeSnap=await getDoc(codeRef);
+    if(!codeSnap.exists()){await setDoc(codeRef,{code,active:member.status==="active",createdAt:member.createdAt||serverTimestamp(),updatedAt:serverTimestamp()},{merge:true});}
+    return {ok:true};
+   }catch(codeError){
+    console.error("Referral code sync failed for "+code+":",codeError);
+    return {ok:false,code,error:codeError.message||String(codeError)};
+   }
+  }));
+  const codeSyncFailures=codeSyncResults.filter(x=>x.ok===false);
+  if(ss.exists())document.getElementById("commissionRate").value=Number(ss.data().rate??10);
+  const validCodes=new Set(["PZWYYMWLBZ",...members.map(x=>String(x.referralCode||"").trim().toUpperCase()).filter(Boolean)]);
+  const referred=members.filter(x=>validCodes.has(String(x.referredByCode||"").trim().toUpperCase()));
+  await Promise.all(referred.map(async member=>{try{const recordRef=doc(db,"referralRegistrations",String(member.referredByCode).trim().toUpperCase(),"members",member.uid);const record=await getDoc(recordRef);if(!record.exists())await setDoc(recordRef,{createdAt:member.createdAt||serverTimestamp()});}catch(migrationError){console.warn("Referral record migration skipped:",migrationError.message);}}));
+  document.getElementById("referralCount").textContent=String(referred.length);
+  document.getElementById("activeReferralCount").textContent=String(referred.filter(x=>x.status==="active").length);
+  referralList.innerHTML="";
+  if(!referred.length)referralList.innerHTML='<div class="activityempty">No referral records yet.</div>';
+  else referred.forEach(m=>{const row=document.createElement("div");row.className="quickrow";const info=document.createElement("div");info.style.minWidth="0";const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";const code=document.createElement("div");code.className="fineprint";code.textContent="Used referral code: "+m.referredByCode;const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");info.append(name,email,code,status);row.append(info);referralList.appendChild(row);});
+  if(codeSyncFailures.length){
+   const first=codeSyncFailures[0];
+   commissionMessage("Referral list loaded, but "+codeSyncFailures.length+" referral code(s) failed to sync. First: "+first.code+" — "+first.error,true);
+  }else if(!referred.length)commissionMessage("Codes synced successfully. No referral signups recorded yet.");
+  else commissionMessage("Codes synced successfully. Loaded "+referred.length+" referral record(s). Commission amounts need eligible transaction data.");
+ }catch(e){referralList.innerHTML='<div class="activityempty">Could not load referrals. Check Firestore Rules.</div>';commissionMessage("Referral load failed: "+e.message,true);}
+}
+document.getElementById("saveCommissionRate").addEventListener("click",async()=>{const rate=Number(document.getElementById("commissionRate").value);if(!Number.isFinite(rate)||rate<0||rate>100){commissionMessage("Rate must be between 0 and 100.",true);return;}const b=document.getElementById("saveCommissionRate");b.disabled=true;b.textContent="Saving…";try{await setDoc(doc(db,"referralSettings","general"),{rate,updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""},{merge:true});commissionMessage("Commission rate saved: "+rate+"%.");await writeActivity("Updated commission rate",rate+"%");await loadActivity();}catch(e){commissionMessage("Save failed: "+e.message+" — referralSettings Firestore rule required.",true);}finally{b.disabled=false;b.textContent="Save Rate";}});
+window.pzRefreshReferrals=async function(){const b=document.getElementById("refreshReferrals");if(b){b.disabled=true;b.textContent="Refreshing…";}commissionMessage("Refreshing referral codes and records…");try{await loadReferrals();}catch(e){commissionMessage("Refresh failed: "+(e.message||String(e)),true);}finally{if(b){b.disabled=false;b.textContent="Refresh Referrals";}}};
+const propertyStatus=document.getElementById("propertyStatus"),propertyList=document.getElementById("propertyList");
+function propertyMessage(message,isError=false){propertyStatus.textContent=message;propertyStatus.style.color=isError?"#ffaaa5":"#91d7ad";}
+let editingPropertyId=null,editingPropertyImagePath="";
+function clearPropertyForm(){["propertyTitle","propertyLocation","propertyPrice","propertyImage","propertyDescription"].forEach(id=>document.getElementById(id).value="");document.getElementById("propertyType").value="Apartment";document.getElementById("propertyAvailability").value="Available";document.getElementById("propertyImageFile").value="";editingPropertyId=null;editingPropertyImagePath="";document.getElementById("savePropertyDraft").textContent="Save as Draft";document.getElementById("publishProperty").textContent="Publish Property";}
+function propertyValue(id){return document.getElementById(id).value.trim();}
+function safePropertyImage(value){if(!value)return "";const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error("Image URL অবশ্যই http বা https হতে হবে।");return u.href;}
+async function loadProperties(){propertyList.innerHTML='<div class="activityempty">Loading property records…</div>';try{const snap=await getDocs(collection(db,"properties"));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));propertyList.innerHTML="";if(!rows.length){propertyList.innerHTML='<div class="activityempty">No properties added yet.</div>';return;}rows.forEach(p=>{const row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:13px;margin:8px 0;background:#0d131c";const title=document.createElement("strong");title.textContent=p.title||"Untitled property";const info=document.createElement("p");info.style.cssText="margin:5px 0;color:#91a0b3;font-size:11px";info.textContent=(p.location||"No location")+" · "+(p.type||"Property")+" · "+(p.price||"Price on request")+" · "+String(p.status||"draft").toUpperCase();const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px";const edit=document.createElement("button");edit.className="btn";edit.type="button";edit.textContent="Edit";edit.addEventListener("click",()=>{editingPropertyId=p.id;editingPropertyImagePath=p.imagePath||"";document.getElementById("propertyTitle").value=p.title||"";document.getElementById("propertyLocation").value=p.location||"";document.getElementById("propertyType").value=p.type||"Apartment";document.getElementById("propertyAvailability").value=p.availability||"Available";document.getElementById("propertyPrice").value=p.price||"";document.getElementById("propertyImage").value=p.imageUrl||"";document.getElementById("propertyDescription").value=p.description||"";document.getElementById("savePropertyDraft").textContent="Update as Draft";document.getElementById("publishProperty").textContent="Update & Publish";propertyMessage("Editing: "+(p.title||"property"));document.getElementById("propertyTitle").focus();});const toggle=document.createElement("button");toggle.className="btn";toggle.type="button";toggle.textContent=p.status==="published"?"Unpublish":"Publish";toggle.addEventListener("click",async()=>{toggle.disabled=true;try{await updateDoc(doc(db,"properties",p.id),{status:p.status==="published"?"draft":"published",updatedAt:serverTimestamp()});await writeActivity(p.status==="published"?"Unpublished property":"Published property",p.title||p.id);await loadProperties();await loadActivity();await loadAdminOverview();propertyMessage("Property status updated.");}catch(e){propertyMessage("Status update failed: "+e.message,true);toggle.disabled=false;}});const remove=document.createElement("button");remove.className="btn";remove.type="button";remove.textContent="Delete";remove.style.color="#ffaaa5";remove.addEventListener("click",async()=>{if(!confirm("এই property listing স্থায়ীভাবে delete করবে?"))return;remove.disabled=true;try{await deleteDoc(doc(db,"properties",p.id));await writeActivity("Deleted property",p.title||p.id);await loadProperties();await loadActivity();await loadAdminOverview();propertyMessage("Property deleted.");}catch(e){propertyMessage("Delete failed: "+e.message,true);remove.disabled=false;}});actions.append(edit,toggle,remove);row.append(title,info,actions);propertyList.appendChild(row);});}catch(e){propertyList.innerHTML='<div class="activityempty">Could not load properties. Check Firestore Rules.</div>';propertyMessage("Property load failed: "+e.message,true);}}
+async function saveProperty(status){const title=propertyValue("propertyTitle"),location=propertyValue("propertyLocation"),type=propertyValue("propertyType"),availability=propertyValue("propertyAvailability"),price=propertyValue("propertyPrice"),description=propertyValue("propertyDescription");if(!title||!location||!type||!price||!description){propertyMessage("Name, location, type, price এবং description পূরণ করো।",true);return;}let imageUrl="";try{imageUrl=safePropertyImage(propertyValue("propertyImage"));}catch(e){propertyMessage(e.message,true);return;}const file=document.getElementById("propertyImageFile").files[0];if(file&&(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5*1024*1024)){propertyMessage("Choose a JPG, PNG or WebP image smaller than 5 MB.",true);return;}const button=document.getElementById(status==="published"?"publishProperty":"savePropertyDraft");button.disabled=true;button.textContent="Saving…";try{let imagePath=editingPropertyImagePath;if(file){imagePath="property-images/"+Date.now()+"_"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const uploaded=await uploadBytes(storageRef(storage,imagePath),file,{contentType:file.type});imageUrl=await getDownloadURL(uploaded.ref);}if(editingPropertyId){await updateDoc(doc(db,"properties",editingPropertyId),{title,location,type,availability,price,priceCurrency:'BDT',imageUrl,imagePath,description,status,updatedAt:serverTimestamp()});await writeActivity("Updated property",title);}else{await addDoc(collection(db,"properties"),{title,location,type,availability,price,priceCurrency:'BDT',imageUrl,imagePath,description,status,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),createdBy:auth.currentUser?.uid||""});await writeActivity(status==="published"?"Published property":"Saved property draft",title);}clearPropertyForm();propertyMessage(status==="published"?"Property published or updated on the public website.":"Property saved or updated as draft.");await loadProperties();await loadActivity();await loadAdminOverview();}catch(e){propertyMessage("Save failed: "+e.message+" — properties Firestore Rules permission check করো।",true);}finally{button.disabled=false;button.textContent=status==="published"?"Publish Property":"Save as Draft";}}
+
+const sampleRows=[
+["Contemporary Family Apartment","Uttara, Dhaka","Apartment","৳1,25,00,000","photo-1600596542815-ffad4c1539a9","Modern family-home concept with bright living spaces and a practical layout."],
+["Elegant City Residence","Dhanmondi, Dhaka","Apartment","৳98,00,000","photo-1600607687939-ce8a6c25118c","Contemporary interior styling, comfortable bedrooms and open living-dining space."],
+["Garden View Family House","Purbachal, Dhaka","House","৳2,40,00,000","photo-1600566753086-00f18fb6b3ea","Spacious suburban-home concept with landscaped outdoor space."],
+["Modern Duplex Home","Bashundhara R/A, Dhaka","House","৳2,10,00,000","photo-1600607687920-4e2a09cf159d","Two-level residential design concept with generous shared spaces."],
+["Premium Residential Plot","Uttara Sector 10, Dhaka","Land","৳75,00,000","photo-1500382017468-9049fed747ef","Example land listing for layout preview. Plot documents and availability are not verified."],
+["Commercial Office Suite","Motijheel, Dhaka","Office","৳1,80,00,000","photo-1497366754035-f200968a6e72","Professional office-space concept with open-plan workspace and meeting area."],
+["Boutique Retail Space","Banani, Dhaka","Commercial","৳85,00,000","photo-1600210492486-724fe5c67fb0","Retail-space concept for demonstrating commercial property cards."],
+["Bright Corner Apartment","Mirpur DOHS, Dhaka","Apartment","৳82,00,000","photo-1600566753190-17f0baa2a6c3","Bright apartment concept with a practical family layout."],
+["Premium Residence Concept","Gulshan, Dhaka","Apartment","৳3,20,00,000","photo-1600607687644-c7171b42498f","Premium residential concept with spacious rooms and refined finishes."],
+["Suburban Residential Land","Savar, Dhaka","Land","৳38,00,000","photo-1500382017468-9049fed747ef","Example land card for website presentation; exact location and measurement are not verified."]
+];
+async function addSampleListings(automatic=false){
+ const b=document.getElementById("addSampleProperties");
+ if(b){b.disabled=true;b.textContent="Adding…";}
+ try{
+  const snap=await getDocs(collection(db,"properties"));
+  const names=new Set(snap.docs.filter(d=>d.data().isSample===true).map(d=>d.data().title));
+  let n=0;
+  for(const r of sampleRows){
+   if(names.has(r[0]))continue;
+   await addDoc(collection(db,"properties"),{
+    title:r[0],location:r[1],type:r[2],price:r[3],priceCurrency:'BDT',
+    imageUrl:"https://images.unsplash.com/"+r[4]+"?auto=format&fit=crop&w=1200&q=85",
+    description:"SAMPLE LISTING — "+r[5]+" Fictional illustrative content; this is not a verified property offer.",
+    availability:"Available",status:"published",isSample:true,
+    createdAt:serverTimestamp(),updatedAt:serverTimestamp(),createdBy:auth.currentUser?.uid||""
+   });
+   n++;
+  }
+  propertyMessage(n?n+" sample listings published.":"Sample listings already exist.");
+  await loadAdminOverview();
+ }catch(e){
+  propertyMessage("Sample listings যোগ হয়নি: "+(e.code||"")+" "+e.message,true);
+ }finally{
+  if(b){b.disabled=false;b.textContent="Add 10 sample listings";}
+ }
+}
+document.getElementById("addSampleProperties").addEventListener("click",async()=>{
+ await addSampleListings(false);
+ await loadProperties();
+});
+document.getElementById("deleteSampleProperties").addEventListener("click",async()=>{
+ if(!confirm("Delete all sample listings only? Other properties will remain."))return;
+ const b=document.getElementById("deleteSampleProperties");b.disabled=true;b.textContent="Deleting…";
+ try{const snap=await getDocs(collection(db,"properties"));const docs=snap.docs.filter(d=>d.data().isSample===true);for(const d of docs)await deleteDoc(doc(db,"properties",d.id));propertyMessage(docs.length+" sample listings deleted; other properties kept.");await loadProperties();await loadAdminOverview();}
+ catch(e){propertyMessage("Delete failed: "+e.message,true);}finally{b.disabled=false;b.textContent="Delete all sample listings";}
+});
+
+document.getElementById("savePropertyDraft").addEventListener("click",()=>saveProperty("draft"));document.getElementById("publishProperty").addEventListener("click",()=>saveProperty("published"));document.getElementById("refreshProperties").addEventListener("click",loadProperties);
+async function renderInboxCollection(collectionName,targetId,kind){const target=document.getElementById(targetId);target.innerHTML='<div class="activityempty">Loading…</div>';try{const snap=await getDocs(collection(db,collectionName));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(item=>kind!=="enquiry"||(!item.requestType&&!!item.propertyId&&!!item.message)).sort((x,y)=>(y.createdAt?.seconds||0)-(x.createdAt?.seconds||0)).slice(0,60);target.innerHTML="";if(!rows.length){target.innerHTML='<div class="activityempty">No records yet.</div>';return;}rows.forEach(item=>{const row=document.createElement("div");row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:12px;margin:8px 0;background:#0d131c";const title=document.createElement("strong");title.textContent=kind==="enquiry"?(item.name||item.email||"Member")+" · "+(item.propertyId||"Property"):kind==="support"?(item.subject||"Support request"):(item.title||"Property submission");const detail=document.createElement("p");detail.style.cssText="white-space:pre-wrap;color:#aab6c6;font-size:12px";detail.textContent=(item.message||item.description||"")+" · "+(item.email||"")+" · "+(item.status||"open");row.append(title,detail);if(kind!=="submission"&&item.status!=="resolved"){const resolve=document.createElement("button");resolve.className="btn";resolve.type="button";resolve.textContent="Mark resolved";resolve.addEventListener("click",async()=>{resolve.disabled=true;try{await updateDoc(doc(db,collectionName,item.id),{status:"resolved",resolvedAt:serverTimestamp(),resolvedBy:auth.currentUser?.uid||""});await writeActivity("Resolved "+(kind==="enquiry"?"property enquiry":"support request"),item.email||item.id);await renderInboxCollection(collectionName,targetId,kind);await loadActivity();}catch(e){propertyMessage("Could not update request: "+e.message,true);resolve.disabled=false;}});row.appendChild(resolve);}if(kind==="submission"&&item.status==="pending"){const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";const approve=document.createElement("button");approve.className="btn";approve.textContent="Approve & Publish";approve.addEventListener("click",async()=>{approve.disabled=true;try{await setDoc(doc(db,"properties",item.id),{title:item.title,location:item.location,type:item.type,availability:item.availability||"Available",price:item.price,priceCurrency:item.priceCurrency||"legacy",imageUrl:item.imageUrl||"",description:item.description,status:"published",createdAt:item.createdAt||serverTimestamp(),updatedAt:serverTimestamp(),createdBy:auth.currentUser?.uid||"",submittedBy:item.uid||"",sourceSubmissionId:item.id},{merge:true});await updateDoc(doc(db,"propertySubmissions",item.id),{status:"approved",reviewedAt:serverTimestamp(),approvedPropertyId:item.id});await writeActivity("Approved property submission",item.title||item.id);await loadProperties();await loadActivity();await renderInboxCollection(collectionName,targetId,kind);}catch(e){propertyMessage("Approval failed: "+e.message,true);approve.disabled=false;}});const reject=document.createElement("button");reject.className="btn";reject.textContent="Reject";reject.addEventListener("click",async()=>{reject.disabled=true;try{await updateDoc(doc(db,"propertySubmissions",item.id),{status:"rejected",reviewedAt:serverTimestamp()});await writeActivity("Rejected property submission",item.title||item.id);await renderInboxCollection(collectionName,targetId,kind);await loadActivity();}catch(e){propertyMessage("Reject failed: "+e.message,true);reject.disabled=false;}});actions.append(approve,reject);row.appendChild(actions);}target.appendChild(row);});}catch(e){target.innerHTML='<div class="activityempty">Could not load records: '+String(e.message)+'</div>';}}
+async function loadCommunicationInbox(){await Promise.all([renderInboxCollection("propertyEnquiries","enquiryList","enquiry"),renderInboxCollection("supportMessages","supportList","support"),renderInboxCollection("propertySubmissions","submissionList","submission")]);}
+
+document.getElementById("refreshEnquiries").addEventListener("click",loadCommunicationInbox);document.getElementById("refreshSupport").addEventListener("click",loadCommunicationInbox);document.getElementById("refreshSubmissions").addEventListener("click",loadCommunicationInbox);
+function offerField(id){return document.getElementById(id).value.trim();}
+function safeOfferUrl(value){if(!value)return "";const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error("শুধু http বা https লিংক ব্যবহার করো।");return u.href;}
+let editingOfferId=null;
+function clearOfferForm(){["offerTitle","offerImage","offerButtonText","offerDescription","offerButtonUrl"].forEach(id=>document.getElementById(id).value="");editingOfferId=null;document.getElementById("saveOfferDraft").textContent="Save as Draft";document.getElementById("publishOffer").textContent="Publish Offer";}
+function offerStatusText(text,isError=false){offerStatus.textContent=text;offerStatus.style.color=isError?"#ffaaa5":"#91d7ad";}
+async function loadOffers(){
+ offerList.innerHTML='<div class="activityempty">Loading offers…</div>';
+ try{
+  const snap=await getDocs(collection(db,"offers"));
+  if(snap.empty){offerList.innerHTML='<div class="activityempty">No offers created yet.</div>';return;}
+  offerList.innerHTML="";
+  snap.forEach(item=>{
+   const o=item.data(),row=document.createElement("div");
+   row.style.cssText="border:1px solid #303a47;border-radius:11px;padding:13px;margin:8px 0;background:#0d131c";
+   const title=document.createElement("strong");title.textContent=o.title||"Untitled offer";
+   const info=document.createElement("p");info.style.cssText="margin:5px 0;color:#91a0b3;font-size:11px";info.textContent=(o.description||"")+" · "+(o.status||"draft").toUpperCase();
+   const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px";
+   const edit=document.createElement("button");edit.className="btn";edit.type="button";edit.textContent="Edit";edit.addEventListener("click",()=>{editingOfferId=item.id;document.getElementById("offerTitle").value=o.title||"";document.getElementById("offerImage").value=o.imageUrl||"";document.getElementById("offerButtonText").value=o.buttonText||"Learn more";document.getElementById("offerDescription").value=o.description||"";document.getElementById("offerButtonUrl").value=o.buttonUrl||"";document.getElementById("saveOfferDraft").textContent="Update as Draft";document.getElementById("publishOffer").textContent="Update & Publish";offerStatusText("Editing: "+(o.title||"offer"));document.getElementById("offerTitle").focus();});actions.appendChild(edit);
+   const toggle=document.createElement("button");toggle.className="btn";toggle.type="button";toggle.textContent=o.status==="published"?"Unpublish":"Publish";
+   toggle.addEventListener("click",async()=>{toggle.disabled=true;try{await updateDoc(doc(db,"offers",item.id),{status:o.status==="published"?"draft":"published",updatedAt:serverTimestamp()});await writeActivity(o.status==="published"?"Unpublished offer":"Published offer",o.title||item.id);await loadOffers();await loadActivity();await loadAdminOverview();offerStatusText("Offer status updated.");}catch(e){offerStatusText("Update failed: "+e.message,true);toggle.disabled=false;}});
+   const remove=document.createElement("button");remove.className="btn";remove.type="button";remove.textContent="Delete";remove.style.color="#ffaaa5";
+   remove.addEventListener("click",async()=>{if(!confirm("এই অফারটি স্থায়ীভাবে Delete করবে?"))return;remove.disabled=true;try{await deleteDoc(doc(db,"offers",item.id));await writeActivity("Deleted offer",o.title||item.id);await loadOffers();await loadActivity();await loadAdminOverview();offerStatusText("Offer deleted.");}catch(e){offerStatusText("Delete failed: "+e.message,true);remove.disabled=false;}});
+   actions.append(toggle,remove);row.append(title,info,actions);offerList.appendChild(row);
+  });
+ }catch(e){offerList.innerHTML='<div class="activityempty">Offers load হয়নি। Firestore Rules আপডেট করো।</div>';offerStatusText("Load failed: "+e.message,true);}
+}
+async function saveOffer(status){
+ const title=offerField("offerTitle"),description=offerField("offerDescription");
+ if(!title||!description){offerStatusText("Title এবং offer details দিতে হবে।",true);return;}
+ let imageUrl="",buttonUrl="";
+ try{imageUrl=safeOfferUrl(offerField("offerImage"));buttonUrl=safeOfferUrl(offerField("offerButtonUrl"));}catch(e){offerStatusText(e.message,true);return;}
+ const button=document.getElementById(status==="published"?"publishOffer":"saveOfferDraft");
+ button.disabled=true;button.textContent="Saving…";
+ try{
+  if(editingOfferId){await updateDoc(doc(db,"offers",editingOfferId),{title,description,imageUrl,buttonText:offerField("offerButtonText")||"Learn more",buttonUrl,status,updatedAt:serverTimestamp()});await writeActivity("Updated offer",title);}else{await addDoc(collection(db,"offers"),{title,description,imageUrl,buttonText:offerField("offerButtonText")||"Learn more",buttonUrl,status,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});await writeActivity(status==="published"?"Published offer":"Saved offer draft",title);}
+  clearOfferForm();offerStatusText(status==="published"?"Offer published or updated.":"Offer saved or updated as draft.");await loadOffers();await loadActivity();await loadAdminOverview();
+ }catch(e){offerStatusText("Save হয়নি: "+e.message+" — Firestore Rules-এ offers permission যোগ করো।",true);}
+ finally{button.disabled=false;button.textContent=status==="published"?"Publish Offer":"Save as Draft";}
+}
+document.getElementById("saveOfferDraft").addEventListener("click",()=>saveOffer("draft"));
+document.getElementById("publishOffer").addEventListener("click",()=>saveOffer("published"));
+document.getElementById("refreshOffers").addEventListener("click",loadOffers);
+
+function renderMembers(){
+ const q=(document.getElementById("memberSearch").value||"").toLowerCase().trim();
+ memberList.innerHTML="";
+ if(!q){memberStatus.textContent=memberRecords.length+" account(s) loaded. Search with an email to view a member.";return;}
+ const rows=memberRecords.filter(m=>String(m.email||"").toLowerCase().includes(q));
+ if(!rows.length){memberStatus.textContent="No member found for this email.";memberList.textContent="No matching member.";return;}
+ memberStatus.textContent=rows.length+" member(s) found for this email.";
+ rows.forEach(m=>{
+  const row=document.createElement("div");row.className="quickrow";
+  const info=document.createElement("div");info.style.minWidth="0";
+  const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";
+  const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";
+  const phone=document.createElement("div");phone.className="fineprint";phone.textContent="Phone: "+(m.phoneNumber||"Not provided");
+  const uid=document.createElement("div");uid.className="fineprint";uid.textContent="UID: "+m.uid;
+  const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
+  const action=document.createElement("button");action.className="btn";action.type="button";action.textContent=m.status==="active"?"Deactivate":"Activate";
+  action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});const code=String(m.referralCode||"").trim().toUpperCase();if(code){await setDoc(doc(db,"referralCodes",code),{code,active:next==="active",updatedAt:serverTimestamp()},{merge:true});}await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadReferrals();await loadActivity();await loadAdminOverview();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
+  info.append(name,email,phone,uid,status);row.append(info,action);memberList.appendChild(row);
+ });
+}
+async function loadMembers(){
+ memberStatus.textContent="Loading members…";
+ try{
+  const snap=await getDocs(collection(db,"members"));
+  memberRecords=snap.docs.map(d=>({uid:d.id,...d.data()}));
+  renderMembers();renderManualCreditMembers();
+ }catch(e){memberStatus.textContent="Could not load members: "+e.message;memberList.textContent="Check Firestore Rules and admin permissions.";}
+}
+document.getElementById("memberSearch").addEventListener("input",renderMembers);
+document.getElementById("refreshMembers").addEventListener("click",loadMembers);
+function propertyRateTimeMs(value){
+ if(value&&typeof value.toMillis==="function")return value.toMillis();
+ if(value instanceof Date)return value.getTime();
+ const n=Number(value);return Number.isFinite(n)?n:0;
+}
+function propertyProfitBetween(amount,start,end,history,fallbackRate=0.02){
+ if(!Number.isFinite(amount)||amount<=0||end<=start)return 0;
+ const entries=(Array.isArray(history)?history:[]).map(x=>({rate:Number(x.dailyRate),at:propertyRateTimeMs(x.effectiveAt)})).filter(x=>Number.isFinite(x.rate)&&x.rate>=0&&x.rate<=1).sort((a,b)=>a.at-b.at);
+ let cursor=start,rate=fallbackRate,total=0;
+ for(const entry of entries){
+  if(entry.at<=start){rate=entry.rate;continue;}
+  if(entry.at>=end)break;
+  total+=amount*rate/24*(entry.at-cursor)/3600000;cursor=entry.at;rate=entry.rate;
+ }
+ total+=amount*rate/24*(end-cursor)/3600000;
+ return total;
+}
+async function loadPropertyProfitRate(){
+ const status=document.getElementById("propertyProfitRateStatus");
+ try{
+  const snap=await getDoc(doc(db,"siteSettings","propertyProfit")),s=snap.exists()?snap.data():{};
+  const rate=Number.isFinite(Number(s.dailyRate))?Number(s.dailyRate):0.02;
+  document.getElementById("propertyProfitRate").value=String(rate*100);
+  if(status)status.textContent="Current rate: "+(rate*100)+"% daily. Applies to active packages from each saved change time.";
+ }catch(e){if(status)status.textContent="Could not load property profit rate: "+e.message;}
+}
+document.getElementById("savePropertyProfitRate").addEventListener("click",async()=>{
+ const button=document.getElementById("savePropertyProfitRate"),status=document.getElementById("propertyProfitRateStatus");
+ const percent=Number(document.getElementById("propertyProfitRate").value),nextRate=percent/100;
+ if(!Number.isFinite(percent)||percent<0||percent>100){messageStatus(status,"Enter a daily rate from 0 to 100 percent.",true);return;}
+ button.disabled=true;button.textContent="Saving…";messageStatus(status,"Saving rate and recording the effective time…");
+ try{
+  const ref=doc(db,"siteSettings","propertyProfit"),snap=await getDoc(ref),old=snap.exists()?snap.data():{};
+  const previous=Number.isFinite(Number(old.dailyRate))?Number(old.dailyRate):0.02;
+  let history=Array.isArray(old.history)?old.history.slice():[];
+  if(!history.length)history.push({dailyRate:0.02,effectiveAt:new Date(0)});
+  if(Math.abs(previous-nextRate)>1e-12)history.push({dailyRate:nextRate,effectiveAt:new Date()});
+  await setDoc(ref,{dailyRate:nextRate,history,updatedAt:serverTimestamp()},{merge:true});
+  await writeActivity("Updated Property Profit Rate",(previous*100)+"% → "+(nextRate*100)+"% daily");
+  messageStatus(status,"Saved: "+(nextRate*100)+"% daily. Previous profit is preserved; future profit uses this rate.");
+ }catch(e){messageStatus(status,"Save failed: "+e.message,true);}
+ finally{button.disabled=false;button.textContent="Save Property Profit Rate";}
+});
+async function processMaturedPackages(){
+ const button=document.getElementById("processMaturedPackages"),status=document.getElementById("maturityStatus");
+ if(button){button.disabled=true;button.textContent="Processing…";}
+ if(status)status.textContent="Checking 30-day package maturity…";
+ let processed=0,skipped=0;
+ try{
+  const snap=await getDocs(collection(db,"activePackages")),settingsRef=doc(db,"siteSettings","wallet"),profitSettingsRef=doc(db,"siteSettings","propertyProfit");
+  const now=Date.now(),termMs=30*24*60*60*1000;
+  for(const item of snap.docs){
+   if(item.data().status!=="active")continue;
+   const started=item.data().startedAt?.toMillis?.();
+   if(!started||now<started+termMs)continue;
+   const packageRef=doc(db,"activePackages",item.id),walletRef=doc(db,"wallets",item.data().uid);
+   try{
+    await runTransaction(db,async tx=>{
+     const ps=await tx.get(packageRef);if(!ps.exists())return;
+     const p=ps.data(),start=p.startedAt?.toMillis?.();if(p.status!=="active"||!start||Date.now()<start+termMs)return;
+     const [settingsSnap,profitSnap]=await Promise.all([tx.get(settingsRef),tx.get(profitSettingsRef)]),settings=settingsSnap.exists()?settingsSnap.data():{},profitSettings=profitSnap.exists()?profitSnap.data():{},profitHistory=Array.isArray(profitSettings.history)?profitSettings.history:[],legacyRate=Number(settings.exchangeRateBDT||0);
+     const principal=Number(p.amountBDT||(Number(p.amountUSD||0)*Number(p.exchangeRateBDT||legacyRate)));
+     if(!Number.isFinite(principal)||principal<=0)throw new Error("Invalid package amount or missing saved conversion rate.");
+     const totalEarnings=Math.round(propertyProfitBetween(principal,start,start+termMs,profitHistory,Number(p.dailyRate)||0.02)*100)/100,alreadyPaid=Math.max(0,Number(p.dailyEarningsPaidBDT||0)),earnings=Math.max(0,Math.round((totalEarnings-alreadyPaid)*100)/100),payout=Math.round((principal+earnings)*100)/100;
+     const ws=await tx.get(walletRef),wallet=ws.exists()?ws.data():{};let balance=Number(wallet.balanceBDT);
+     if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(legacyRate)||legacyRate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*legacyRate*100)/100;}
+     const nextBalance=Math.round((balance+payout)*100)/100;
+     if(ws.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid:p.uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+     tx.update(packageRef,{status:"completed",termDays:30,completedAt:serverTimestamp(),maturityEarningsBDT:earnings,maturityPayoutBDT:payout});
+    });processed++;
+   }catch(e){skipped++;console.warn("Maturity processing failed:",item.id,e.message);}
+  }
+  if(status)status.textContent="Maturity check complete: "+processed+" package(s) credited; "+skipped+" issue(s).";
+  if(processed)await writeActivity("Processed matured packages",processed+" package(s) credited to Main Wallet");
+ }catch(e){if(status)status.textContent="Maturity processing failed: "+e.message;}
+ finally{if(button){button.disabled=false;button.textContent="Process 30-Day Packages";}}
+}
+function renderManualCreditMembers(){
+ const select=document.getElementById("manualCreditMember");if(!select)return;
+ const previous=select.value;select.innerHTML='<option value="">Choose a member account…</option>';
+ memberRecords.slice().sort((a,b)=>String(a.email||a.name||"").localeCompare(String(b.email||b.name||""))).forEach(m=>{const option=document.createElement("option");option.value=m.uid;option.textContent=(m.name||"Unnamed member")+" · "+(m.email||m.uid);select.appendChild(option);});
+ if(memberRecords.some(m=>m.uid===previous))select.value=previous;
+}
+function updateManualCreditPreview(){
+ const amount=Number(document.getElementById("manualCreditBDT")?.value||0),preview=document.getElementById("manualCreditPreview");
+ if(preview)preview.textContent=amount>0&&Number.isSafeInteger(amount)?"৳"+amount.toLocaleString("en-US")+" will be added to the member's wallet.":"Enter a whole BDT amount.";
+}
+document.getElementById("manualCreditBDT").addEventListener("input",updateManualCreditPreview);
+document.getElementById("manualCreditButton").addEventListener("click",async()=>{
+ const button=document.getElementById("manualCreditButton"),status=document.getElementById("manualCreditStatus"),uid=document.getElementById("manualCreditMember").value,amountBDT=Number(document.getElementById("manualCreditBDT").value),member=memberRecords.find(m=>m.uid===uid);
+ if(!member){messageStatus(status,"Select a member account first.",true);return;}
+ if(!Number.isSafeInteger(amountBDT)||amountBDT<=0){messageStatus(status,"Enter a whole BDT amount greater than zero.",true);return;}
+ if(!confirm("Confirm manual wallet credit?\\nMember: "+(member.name||member.email||uid)+"\\nAmount: ৳"+amountBDT.toLocaleString("en-US")+"\\nThis immediately increases the member's Main Wallet."))return;
+ button.disabled=true;button.textContent="Adding…";messageStatus(status,"Verifying account and adding balance…");
+ try{
+  await runTransaction(db,async tx=>{
+   const memberRef=doc(db,"members",uid),walletRef=doc(db,"wallets",uid),settingsRef=doc(db,"siteSettings","wallet");
+   const [memberSnap,walletSnap,settingsSnap]=await Promise.all([tx.get(memberRef),tx.get(walletRef),tx.get(settingsRef)]);
+   if(!memberSnap.exists())throw new Error("Member account no longer exists.");
+   const settings=settingsSnap.exists()?settingsSnap.data():{},rate=Number(settings.exchangeRateBDT||0),wallet=walletSnap.exists()?walletSnap.data():{};let balance=Number(wallet.balanceBDT);
+   if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(rate)||rate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*rate*100)/100;}
+   const nextBalance=Math.round((balance+amountBDT)*100)/100;
+   if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  });
+  await writeActivity("Manual wallet credit",(member.email||uid)+" · ৳"+amountBDT.toLocaleString("en-US")+" BDT");
+  messageStatus(status,"Success: ৳"+amountBDT.toLocaleString("en-US")+" added to "+(member.email||uid)+".");
+  document.getElementById("manualCreditBDT").value="";updateManualCreditPreview();await loadMembers();await loadActivity();
+ }catch(e){messageStatus(status,"Could not add wallet balance: "+e.message,true);}
+ finally{button.disabled=false;button.textContent="Add Balance to Member Wallet";}
+});
+async function loadPaymentAccounts(){
+ const status=document.getElementById("paymentAccountsStatus");
+ try{
+  const snap=await getDoc(doc(db,"siteSettings","wallet")),w=snap.exists()?snap.data():{};
+  const deposits=w.depositAccounts||{},withdrawals=w.withdrawAccounts||{};
+  document.getElementById("depositBkash").value=deposits.bKash||"";
+  document.getElementById("depositNagad").value=deposits.Nagad||"";
+  document.getElementById("depositRocket").value=deposits.Rocket||"";
+  document.getElementById("depositBinance").value=deposits.Binance||"";
+  document.getElementById("depositBank").value=deposits["Bank Account"]||"";
+  document.getElementById("withdrawBkash").value=withdrawals.bKash||"";
+  document.getElementById("withdrawNagad").value=withdrawals.Nagad||"";
+  document.getElementById("withdrawRocket").value=withdrawals.Rocket||"";
+  document.getElementById("withdrawBinance").value=withdrawals.Binance||"";
+  document.getElementById("withdrawBank").value=withdrawals["Bank Account"]||"";
+  messageStatus(status,"Saved payment account numbers loaded from Firebase.");
+ }catch(e){messageStatus(status,"Could not load payment accounts: "+e.message,true);}
+}
+document.getElementById("savePaymentAccounts").addEventListener("click",async()=>{
+ const button=document.getElementById("savePaymentAccounts"),status=document.getElementById("paymentAccountsStatus");
+ const value=id=>document.getElementById(id).value.trim();
+ const depositAccounts={bKash:value("depositBkash"),Nagad:value("depositNagad"),Rocket:value("depositRocket"),Binance:value("depositBinance"),"Bank Account":value("depositBank")};
+ const withdrawAccounts={bKash:value("withdrawBkash"),Nagad:value("withdrawNagad"),Rocket:value("withdrawRocket"),Binance:value("withdrawBinance"),"Bank Account":value("withdrawBank")};
+ button.disabled=true;button.textContent="Saving…";messageStatus(status,"Saving payment account numbers…");
+ try{
+  await setDoc(doc(db,"siteSettings","wallet"),{depositAccounts,withdrawAccounts,updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||""},{merge:true});
+  await writeActivity("Updated payment account numbers","Deposit and withdrawal account details updated");
+  messageStatus(status,"Saved successfully. The account numbers are updated in Firebase.");
+ }catch(e){messageStatus(status,"Save failed: "+e.message,true);}
+ finally{button.disabled=false;button.textContent="Save Payment Account Numbers";}
+});
+async function loadWalletLimits(){
+ const status=document.getElementById("walletLimitsStatus");
+ try{
+  const snap=await getDoc(doc(db,"siteSettings","wallet")),s=snap.exists()?snap.data():{};
+  document.getElementById("minimumDepositBDT").value=String(Number.isSafeInteger(Number(s.minimumDepositBDT))&&Number(s.minimumDepositBDT)>0?Number(s.minimumDepositBDT):500);
+  document.getElementById("minimumWithdrawBDT").value=String(Number.isSafeInteger(Number(s.minimumWithdrawBDT))&&Number(s.minimumWithdrawBDT)>0?Number(s.minimumWithdrawBDT):500);
+  if(status)status.textContent="Current limits loaded from Firebase (BDT).";
+ }catch(e){if(status)status.textContent="Could not load wallet limits: "+e.message;}
+}
+document.getElementById("saveWalletLimits").addEventListener("click",async()=>{
+ const button=document.getElementById("saveWalletLimits"),status=document.getElementById("walletLimitsStatus");
+ const minimumDepositBDT=Number(document.getElementById("minimumDepositBDT").value),minimumWithdrawBDT=Number(document.getElementById("minimumWithdrawBDT").value);
+ if(!Number.isSafeInteger(minimumDepositBDT)||minimumDepositBDT<1||!Number.isSafeInteger(minimumWithdrawBDT)||minimumWithdrawBDT<1){messageStatus(status,"দুটো ঘরেই ১ বা তার বেশি পূর্ণ BDT amount দিতে হবে।",true);return;}
+ button.disabled=true;button.textContent="Saving…";messageStatus(status,"Saving minimum amounts…");
+ try{
+  await setDoc(doc(db,"siteSettings","wallet"),{minimumDepositBDT,minimumWithdrawBDT,updatedAt:serverTimestamp()},{merge:true});
+  await writeActivity("Updated wallet minimum amounts","Minimum deposit ৳"+minimumDepositBDT+" · Minimum withdrawal ৳"+minimumWithdrawBDT);
+  messageStatus(status,"Saved: Minimum deposit ৳"+minimumDepositBDT+" · Minimum withdrawal ৳"+minimumWithdrawBDT+".");
+ }catch(e){messageStatus(status,"Save failed: "+e.message,true);}
+ finally{button.disabled=false;button.textContent="Save Minimum Amounts";}
+});
+async function loadSiteSettings(){
+ loadPaymentAccounts();loadWalletLimits();loadPropertyProfitRate();
+ try{
+  const snap = await getDoc(doc(db,"siteSettings","general"));
+  if(snap.exists()){
+   const s=snap.data();
+   document.getElementById("siteName").value=s.siteName||"";
+   document.getElementById("siteLogo").value=s.logoUrl||"";
+   document.getElementById("siteFavicon").value=s.faviconUrl||"";
+   document.getElementById("siteDescription").value=s.description||"";
+   document.getElementById("siteContact").value=s.contactEmail||"";
+   document.getElementById("sitePhone").value=s.contactPhone||"";
+  }
+ }catch(e){ settingsStatus.textContent="Settings load হয়নি। Firestore Rules-এ admin settings access যোগ করতে হবে।"; }
+}
+settingsButton.addEventListener("click",async()=>{
+ settingsButton.disabled=true; settingsButton.textContent="Saving...";
+ settingsStatus.textContent="Saving settings...";
+ const payload={
+  siteName:document.getElementById("siteName").value.trim(),
+  logoUrl:document.getElementById("siteLogo").value.trim(),
+  faviconUrl:document.getElementById("siteFavicon").value.trim(),
+  description:document.getElementById("siteDescription").value.trim(),
+  contactEmail:document.getElementById("siteContact").value.trim(),
+  contactPhone:document.getElementById("sitePhone").value.trim(),
+  updatedAt:serverTimestamp()
+ };
+ try{
+  await setDoc(doc(db,"siteSettings","general"),payload,{merge:true});
+  settingsStatus.textContent="Website settings saved successfully.";await writeActivity("Updated website settings",payload.siteName||"Website settings");await loadActivity();
+ }catch(e){
+  settingsStatus.textContent="Save হয়নি। Firestore Rules-এ admin-এর siteSettings write permission যোগ করতে হবে।";
+ }finally{settingsButton.disabled=false;settingsButton.textContent="Save Website Settings";}
+});
+function showError(message){ errorBox.textContent = message; }
+let authorizedUid=null;
+let authQueue=Promise.resolve();
+const authorizationTasks=new Map();
+function queueAuthorization(user){
+ const key=user?.uid||"signed-out";
+ if(authorizationTasks.has(key))return authorizationTasks.get(key);
+ const task=authQueue.then(()=>authorize(user)).catch(e=>{
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  showError("Admin যাচাই করা যায়নি: "+(e?.code||"")+" "+(e?.message||"Please try again."));
+ }).finally(()=>authorizationTasks.delete(key));
+ authorizationTasks.set(key,task);
+ authQueue=task.catch(()=>{});
+ return task;
+}
+async function authorize(user){
+ if(!user){
+  authorizedUid=null;
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  return;
+ }
+ if(ADMIN_ACCOUNTS.get(user.uid) !== user.email || !user.emailVerified){
+  await signOut(auth);
+  authorizedUid=null;
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  showError("এই অ্যাকাউন্টটি অনুমোদিত Admin নয় অথবা ইমেইল Verify করা হয়নি।");
+  return;
+ }
+ if(authorizedUid===user.uid && document.body.classList.contains("admin-authorized"))return;
+ await user.getIdToken(true);
+ const adminSnap=await getDoc(doc(db,"admins",user.uid));
+ if(!adminSnap.exists() || adminSnap.data().role!=="admin" || adminSnap.data().active!==true){
+  await signOut(auth);
+  authorizedUid=null;
+  document.body.classList.remove("admin-authorized");
+  gate.style.display="flex";
+  showError("Admin permission এখনো সক্রিয় হয়নি। Firebase Firestore-এ admins/"+user.uid+" ডকুমেন্ট তৈরি করতে হবে।");
+  return;
+ }
+ // Ensure the platform-wide referral code exists and stays active automatically.
+ // This runs on admin authorization; members never need manual activation.
+ try{
+  await setDoc(doc(db,"referralCodes","PZWYYMWLBZ"),{
+   code:"PZWYYMWLBZ",active:true,createdAt:serverTimestamp(),updatedAt:serverTimestamp()
+  },{merge:true});
+ }catch(referralSeedError){
+  console.error("Platform referral code initialization failed:",referralSeedError);
+  showError("Admin logged in, but platform referral code setup failed: "+(referralSeedError.message||String(referralSeedError)));
+ }
+ authorizedUid=user.uid;
+ document.body.classList.add("admin-authorized");
+ gate.style.display="none";
+ loadAdminOverview();
+ loadSiteSettings();
+
+ await processMaturedPackages();
+
+ loadOffers();
+ await addSampleListings(true);
+ loadProperties();
+ loadCommunicationInbox();
+ loadMembers();
+ loadReferrals();
+ loadNotices();
+ loadActivity();
+}
+onAuthStateChanged(auth,user=>{queueAuthorization(user);});
+form.addEventListener("submit",async event=>{
+ event.preventDefault();
+ showError("");
+ loginButton.disabled=true;
+ loginButton.textContent="Verifying...";
+ try{
+  const credential=await signInWithEmailAndPassword(auth,document.getElementById("adminEmail").value.trim().toLowerCase(),document.getElementById("adminPassword").value);
+  if(!credential.user.emailVerified){
+   showError("আগে ইমেইল Verify করো।");
+   await signOut(auth);
+  }else{
+   await credential.user.getIdToken(true);
+   await queueAuthorization(credential.user);
+  }
+ }catch(e){
+  const messages={
+   "auth/invalid-credential":"ইমেইল বা পাসওয়ার্ড সঠিক নয়।",
+   "auth/too-many-requests":"অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করো।",
+   "auth/network-request-failed":"ইন্টারনেট সংযোগ পরীক্ষা করো।"
+  };
+  showError(messages[e.code]||"Login হয়নি: "+e.message);
+ }finally{
+  loginButton.disabled=false;
+  loginButton.textContent="Secure Login";
+ }
+});
+</script>
+
+</body></html>
