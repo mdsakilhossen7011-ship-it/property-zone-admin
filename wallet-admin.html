@@ -145,6 +145,7 @@ async function reviewRequest(id,action){
    tx.set(walletRef,{uid:r.uid,balanceBDT:Math.round((balance+amount)*100)/100,updatedAt:serverTimestamp(),lastDepositRequestId:id},{merge:true});
   }
   if(r.requestType==="wallet-withdraw"){
+   if(action==="approve")throw new Error("Segregated Wallet Withdrawal approval is not enabled yet. Do not approve through the legacy combined wallet.");
    if(!walletSnap.exists())throw new Error("Member wallet is missing; cannot safely process withdrawal.");
    const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0));
    if(r.reservedFunds===true&&pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
