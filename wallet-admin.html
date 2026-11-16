@@ -101,15 +101,7 @@ function showApprovalConfirm(isDeposit,amount){
  });
 }
 function detail(label,value){return '<div class="detail"><small>'+esc(label)+'</small><span>'+esc(value||"—")+'</span></div>';}
-async function loadDepositProof(requestId,path){
- const target=$("proof-"+requestId);if(!target)return;
- try{
-  const blob=await getBlob(storageRef(storage,path)),url=URL.createObjectURL(blob),current=$("proof-"+requestId);
-  if(!current){URL.revokeObjectURL(url);return;}
-  proofObjectUrls.set(requestId,url);
-  current.innerHTML='<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" alt="Deposit payment screenshot" style="display:block;max-width:100%;max-height:360px;object-fit:contain;border-radius:9px;border:1px solid #3a5068"></a>';
- }catch(error){const current=$("proof-"+requestId);if(current)current.textContent="Screenshot could not be loaded: "+error.message;}
-}
+function loadDepositProof(requestId,dataUrl){const target=$("proof-"+requestId);if(!target)return;if(typeof dataUrl!=="string"||!dataUrl.startsWith("data:image/jpeg;base64,")){target.textContent="Screenshot data is unavailable or invalid.";return;}target.innerHTML='<a href="'+esc(dataUrl)+'" target="_blank" rel="noopener"><img src="'+esc(dataUrl)+'" alt="Deposit payment screenshot" style="display:block;max-width:100%;max-height:360px;object-fit:contain;border-radius:9px;border:1px solid #3a5068"></a>';}
 function renderList(kind,items){
  const filter=filters[kind],list=$(kind+"List"),filtered=items.filter(r=>filter==="all"||r.status===filter);
  if(!filtered.length){list.innerHTML='<div class="empty">No '+(filter==="all"?"":filter+" ")+' '+(kind==="deposit"?"deposit":"withdrawal")+' requests found.</div>';return;}
@@ -119,10 +111,10 @@ function renderList(kind,items){
   const payout=isDeposit?(r.receivingAccount||r.walletNumber):(r.adminPayoutAccount||"Not set");
   const when=r.createdAt?.toDate?r.createdAt.toDate().toLocaleString():"Date not available";
   const actions=status==="pending"?'<div class="actions"><button class="approve" data-action="approve" data-id="'+esc(r.id)+'" '+(busy.has(r.id)?"disabled":"")+'>✓ Approve</button><button class="reject" data-action="reject" data-id="'+esc(r.id)+'" '+(busy.has(r.id)?"disabled":"")+'>✕ Reject</button></div>':"";
-  const proof=isDeposit?(r.paymentProofPath?'<div style="margin-top:13px"><div style="font-size:11px;color:var(--muted);margin-bottom:7px;font-weight:800">PAYMENT SCREENSHOT</div><div id="proof-'+esc(r.id)+'" style="padding:10px;background:#0c1727;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px">Loading screenshot…</div></div>':'<div style="margin-top:12px;font-size:12px;color:var(--muted)">No screenshot attached (older request).</div>'):"";
+  const proof=isDeposit?(r.paymentProofData?'<div style="margin-top:13px"><div style="font-size:11px;color:var(--muted);margin-bottom:7px;font-weight:800">PAYMENT SCREENSHOT</div><div id="proof-'+esc(r.id)+'" style="padding:10px;background:#0c1727;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px">Loading screenshot…</div></div>':'<div style="margin-top:12px;font-size:12px;color:var(--muted)">No screenshot attached (older request).</div>'):"";
   return '<article class="request"><div class="req-top"><div><h3>'+esc(r.name||"Member")+'</h3><div class="req-email">'+esc(r.email||r.uid||"No email")+'</div></div><div class="req-amount">'+money(r.amountBDT)+'</div></div><span class="status '+status+'">'+esc(status)+'</span><div class="details">'+detail("Payment method",r.paymentMethod)+detail(isDeposit?"Sender account":"Member account",memberAccount)+detail(isDeposit?"Paid to":"Payout info",payout)+(isDeposit?"":detail("Transaction ID",r.transactionId||"Not applicable"))+detail("Request date",when)+detail("Member UID",r.uid)+'</div>'+proof+actions+'</article>';
  }).join("");
- if(kind==="deposit")filtered.forEach(r=>{if(r.paymentProofPath)loadDepositProof(r.id,r.paymentProofPath);});
+ if(kind==="deposit")filtered.forEach(r=>{if(r.paymentProofData)loadDepositProof(r.id,r.paymentProofData);});
 }
 document.querySelectorAll(".filters").forEach(group=>group.addEventListener("click",e=>{
  const btn=e.target.closest("[data-filter]");if(!btn)return;const kind=group.dataset.kind;filters[kind]=btn.dataset.filter;group.querySelectorAll(".filter").forEach(b=>b.classList.toggle("active",b===btn));render();
