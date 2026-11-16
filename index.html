@@ -119,9 +119,11 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
 <div class="eyebrow">ADMIN-ONLY BALANCE ADJUSTMENT</div><h3>Manual Wallet Credit</h3>
 <p class="desc">Add a BDT amount directly to a selected member's Main Wallet. The saved conversion rate is used only for older wallet records.</p>
 <label class="field" for="manualCreditMember">SELECT MEMBER ACCOUNT</label><select class="control" id="manualCreditMember"><option value="">Load members first…</option></select>
-<label class="field" for="manualCreditBDT">CREDIT AMOUNT (BDT ৳)</label><input class="control" id="manualCreditBDT" type="number" min="1" step="1" placeholder="e.g. 1000">
-<p class="fineprint" id="manualCreditPreview">Select a member and enter a BDT amount to preview the credit.</p>
-<button class="send" id="manualCreditButton" type="button" style="cursor:pointer;opacity:1">Add Balance to Member Wallet</button>
+<label class="field" for="manualBalanceAction">BALANCE ACTION</label><select class="control" id="manualBalanceAction"><option value="credit">Increase balance (+)</option><option value="debit">Decrease balance (−)</option></select>
+<label class="field" for="manualCreditBDT">AMOUNT (BDT ৳)</label><input class="control" id="manualCreditBDT" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 1000">
+<label class="field" for="manualBalanceReason">REASON (REQUIRED)</label><input class="control" id="manualBalanceReason" maxlength="180" placeholder="e.g. Verified correction / refund">
+<p class="fineprint" id="manualCreditPreview">Select a member to view their current balance.</p>
+<button class="send" id="manualCreditButton" type="button" style="cursor:pointer;opacity:1">Update Member Balance</button>
 <p class="fineprint" id="manualCreditStatus" role="status">No balance has been changed.</p></div></section><article class="module" id="offers"><div class="moduleicon">✧</div><div><h3>Offers & Promotions</h3><p>Create offers, save drafts, publish them to the public website and remove expired promotions.</p><span class="state">ADMIN-ONLY ACCESS</span></div></article>
   <section class="panel" id="offerManager" style="grid-column:1/-1;margin-top:4px">
    <div class="eyebrow">PROMOTION MANAGER</div><h2>Create & Manage Offers</h2><p class="desc">Published offers appear on the public Property Zone homepage. Save as draft first or publish immediately.</p>
@@ -453,33 +455,43 @@ async function ensureAdminPublicId(uid){const mappingRef=doc(db,"publicUserIds",
 function renderMembers(){
  const q=(document.getElementById("memberSearch").value||"").toLowerCase().trim();
  memberList.innerHTML="";
- if(!q){memberStatus.textContent=memberRecords.length+" account(s) loaded. Search with an email to view a member.";return;}
- const rows=memberRecords.filter(m=>String(m.email||"").toLowerCase().includes(q)||String(m.publicId||"").includes(q)||String(m.name||"").toLowerCase().includes(q)||String(m.uid||"").toLowerCase().includes(q));
- if(!rows.length){memberStatus.textContent="No matching member found.";memberList.textContent="No matching member.";return;}
- memberStatus.textContent=rows.length+" member(s) found for this email.";
+ const rows=memberRecords.filter(m=>!q||String(m.email||"").toLowerCase().includes(q)||String(m.publicId||"").includes(q)||String(m.name||"").toLowerCase().includes(q)||String(m.uid||"").toLowerCase().includes(q));
+ if(!rows.length){memberStatus.textContent=q?"No matching member found.":"No member accounts found.";memberList.textContent="No matching member.";return;}
+ memberStatus.textContent=rows.length+" of "+memberRecords.length+" member(s) · Current Main Wallet balance shown in BDT.";
  rows.forEach(m=>{
-  const row=document.createElement("div");row.className="quickrow";
-  const info=document.createElement("div");info.style.minWidth="0";
+  const row=document.createElement("div");row.className="quickrow";row.style.alignItems="flex-start";
+  const info=document.createElement("div");info.style.minWidth="0";info.style.flex="1";
   const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";
   const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";
   const phone=document.createElement("div");phone.className="fineprint";phone.textContent="Phone: "+(m.phoneNumber||"Not provided");
   const uid=document.createElement("div");uid.className="fineprint";uid.textContent="Member ID: "+(m.publicId||"Not assigned")+" · Firebase UID: "+m.uid;
+  const balance=document.createElement("div");balance.className="fineprint";balance.style.color="#ffe2a0";balance.style.fontWeight="800";balance.textContent="Main Wallet: "+(m.walletBalanceBDT===null?"Needs review":"৳"+Number(m.walletBalanceBDT||0).toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2}));
   const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
+  const actions=document.createElement("div");actions.style.cssText="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end";
+  const adjust=document.createElement("button");adjust.className="btn";adjust.type="button";adjust.textContent="Adjust Balance";
+  adjust.addEventListener("click",()=>{const select=document.getElementById("manualCreditMember");select.value=m.uid;updateManualCreditPreview();document.getElementById("manualBalanceReason").focus();document.getElementById("walletTools").scrollIntoView({behavior:"smooth",block:"start"});});
   const action=document.createElement("button");action.className="btn";action.type="button";action.textContent=m.status==="active"?"Deactivate":"Activate";
   action.addEventListener("click",async()=>{action.disabled=true;try{const next=m.status==="active"?"inactive":"active";await updateDoc(doc(db,"members",m.uid),{status:next,updatedAt:serverTimestamp()});const code=String(m.referralCode||"").trim().toUpperCase();if(code){await setDoc(doc(db,"referralCodes",code),{code,active:next==="active",updatedAt:serverTimestamp()},{merge:true});}await writeActivity(next==="active"?"Activated member":"Deactivated member",m.email||m.uid);await loadMembers();await loadReferrals();await loadActivity();await loadAdminOverview();}catch(e){memberStatus.textContent="Status update failed: "+e.message;action.disabled=false;}});
-  info.append(name,email,phone,uid,status);row.append(info,action);memberList.appendChild(row);
+  info.append(name,email,phone,uid,balance,status);actions.append(adjust,action);row.append(info,actions);memberList.appendChild(row);
  });
 }
 async function loadMembers(){
- memberStatus.textContent="Loading members…";
+ memberStatus.textContent="Loading members and wallet balances…";
  try{
-  const snap=await getDocs(collection(db,"members"));
-  const mappingSnap=await getDocs(collection(db,"publicUserIds"));
+  const [snap,mappingSnap,walletSnap,settingsSnap]=await Promise.all([getDocs(collection(db,"members")),getDocs(collection(db,"publicUserIds")),getDocs(collection(db,"wallets")),getDoc(doc(db,"siteSettings","wallet"))]);
   const ids=new Map(mappingSnap.docs.map(d=>[d.id,String(d.data().publicId||"")]));
-  memberRecords=snap.docs.map(d=>({uid:d.id,...d.data(),publicId:ids.get(d.id)||""}));
+  const wallets=new Map(walletSnap.docs.map(d=>[d.id,d.data()]));
+  const rate=Number(settingsSnap.exists()?settingsSnap.data().exchangeRateBDT||0:0);
+  memberRecords=snap.docs.map(d=>{
+   const wallet=wallets.get(d.id)||null;let balance=null;
+   if(wallet&&Number.isFinite(Number(wallet.balanceBDT)))balance=Number(wallet.balanceBDT);
+   else if(wallet&&Number.isFinite(Number(wallet.balanceUSD))&&Number(wallet.balanceUSD)>=0&&rate>0)balance=Math.round(Number(wallet.balanceUSD)*rate*100)/100;
+   else if(!wallet)balance=0;
+   return {uid:d.id,...d.data(),publicId:ids.get(d.id)||"",walletBalanceBDT:balance};
+  });
   for(const member of memberRecords){if(!/^\d{7}$/.test(member.publicId)){member.publicId=await ensureAdminPublicId(member.uid);}}
-  renderMembers();renderManualCreditMembers();
- }catch(e){memberStatus.textContent="Could not load members: "+e.message;memberList.textContent="Check Firestore Rules and admin permissions.";}
+  renderMembers();renderManualCreditMembers();updateManualCreditPreview();
+ }catch(e){memberStatus.textContent="Could not load members and balances: "+e.message;memberList.textContent="Check Firestore Rules and admin permissions.";}
 }
 document.getElementById("memberSearch").addEventListener("input",renderMembers);
 document.getElementById("refreshMembers").addEventListener("click",loadMembers);
@@ -563,35 +575,45 @@ async function processMaturedPackages(){
 function renderManualCreditMembers(){
  const select=document.getElementById("manualCreditMember");if(!select)return;
  const previous=select.value;select.innerHTML='<option value="">Choose a member account…</option>';
- memberRecords.slice().sort((a,b)=>String(a.email||a.name||"").localeCompare(String(b.email||b.name||""))).forEach(m=>{const option=document.createElement("option");option.value=m.uid;option.textContent=(m.name||"Unnamed member")+" · "+(m.email||m.uid);select.appendChild(option);});
+ memberRecords.slice().sort((a,b)=>String(a.email||a.name||"").localeCompare(String(b.email||b.name||""))).forEach(m=>{const option=document.createElement("option");option.value=m.uid;option.textContent=(m.publicId||"No ID")+" · "+(m.name||"Unnamed member")+" · "+(m.email||m.uid);select.appendChild(option);});
  if(memberRecords.some(m=>m.uid===previous))select.value=previous;
 }
 function updateManualCreditPreview(){
- const amount=Number(document.getElementById("manualCreditBDT")?.value||0),preview=document.getElementById("manualCreditPreview");
- if(preview)preview.textContent=amount>0&&Number.isSafeInteger(amount)?"৳"+amount.toLocaleString("en-US")+" will be added to the member's wallet.":"Enter a whole BDT amount.";
+ const uid=document.getElementById("manualCreditMember")?.value,member=memberRecords.find(m=>m.uid===uid),amount=Number(document.getElementById("manualCreditBDT")?.value||0),action=document.getElementById("manualBalanceAction")?.value||"credit",preview=document.getElementById("manualCreditPreview");
+ if(!preview)return;
+ const current=member?.walletBalanceBDT;
+ if(!member){preview.textContent="Select a member to view their current balance.";return;}
+ if(current===null){preview.textContent="Current balance needs review because this legacy wallet has no valid saved BDT conversion rate.";return;}
+ const next=action==="debit"?Number(current)-amount:Number(current)+amount;
+ preview.textContent="Current balance: ৳"+Number(current||0).toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2})+" · After adjustment: "+(amount>0&&Number.isSafeInteger(amount)?"৳"+next.toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2}):"Enter a whole BDT amount.");
 }
+document.getElementById("manualCreditMember").addEventListener("change",updateManualCreditPreview);
+document.getElementById("manualBalanceAction").addEventListener("change",updateManualCreditPreview);
 document.getElementById("manualCreditBDT").addEventListener("input",updateManualCreditPreview);
 document.getElementById("manualCreditButton").addEventListener("click",async()=>{
- const button=document.getElementById("manualCreditButton"),status=document.getElementById("manualCreditStatus"),uid=document.getElementById("manualCreditMember").value,amountBDT=Number(document.getElementById("manualCreditBDT").value),member=memberRecords.find(m=>m.uid===uid);
+ const button=document.getElementById("manualCreditButton"),status=document.getElementById("manualCreditStatus"),uid=document.getElementById("manualCreditMember").value,amountBDT=Number(document.getElementById("manualCreditBDT").value),action=document.getElementById("manualBalanceAction").value,reason=document.getElementById("manualBalanceReason").value.trim(),member=memberRecords.find(m=>m.uid===uid);
  if(!member){messageStatus(status,"Select a member account first.",true);return;}
  if(!Number.isSafeInteger(amountBDT)||amountBDT<=0){messageStatus(status,"Enter a whole BDT amount greater than zero.",true);return;}
- if(!confirm("Confirm manual wallet credit?\\nMember: "+(member.name||member.email||uid)+"\\nAmount: ৳"+amountBDT.toLocaleString("en-US")+"\\nThis immediately increases the member's Main Wallet."))return;
- button.disabled=true;button.textContent="Adding…";messageStatus(status,"Verifying account and adding balance…");
+ if(!reason||reason.length>180){messageStatus(status,"Write a reason (maximum 180 characters).",true);return;}
+ if(!confirm("Confirm wallet "+(action==="credit"?"increase":"decrease")+"?\\nMember: "+(member.name||member.email||uid)+" ("+(member.publicId||uid)+")\\nCurrent: ৳"+Number(member.walletBalanceBDT||0).toLocaleString("en-US")+"\\nAmount: ৳"+amountBDT.toLocaleString("en-US")+"\\nReason: "+reason))return;
+ button.disabled=true;button.textContent="Updating…";messageStatus(status,"Checking member and safely updating Main Wallet…");
  try{
   await runTransaction(db,async tx=>{
-   const memberRef=doc(db,"members",uid),walletRef=doc(db,"wallets",uid),settingsRef=doc(db,"siteSettings","wallet");
+   const memberRef=doc(db,"members",uid),walletRef=doc(db,"wallets",uid),settingsRef=doc(db,"siteSettings","wallet"),logRef=doc(collection(db,"activityLogs"));
    const [memberSnap,walletSnap,settingsSnap]=await Promise.all([tx.get(memberRef),tx.get(walletRef),tx.get(settingsRef)]);
    if(!memberSnap.exists())throw new Error("Member account no longer exists.");
    const settings=settingsSnap.exists()?settingsSnap.data():{},rate=Number(settings.exchangeRateBDT||0),wallet=walletSnap.exists()?walletSnap.data():{};let balance=Number(wallet.balanceBDT);
    if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(rate)||rate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*rate*100)/100;}
-   const nextBalance=Math.round((balance+amountBDT)*100)/100;
-   if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+   const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0)),nextBalance=Math.round((action==="debit"?balance-amountBDT:balance+amountBDT)*100)/100;
+   if(action==="debit"&&nextBalance+0.000001<pending)throw new Error("Cannot reduce balance below the member's reserved pending-withdrawal amount (৳"+pending+").");
+   if(nextBalance<0)throw new Error("Insufficient wallet balance for this decrease.");
+   if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});else tx.set(walletRef,{uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});
+   tx.set(logRef,{action:action==="credit"?"Admin wallet balance increased":"Admin wallet balance decreased",details:(member.publicId||uid)+" · "+(member.email||member.name||uid)+" · ৳"+amountBDT+" BDT · "+reason,adminUid:auth.currentUser?.uid||"",adminEmail:auth.currentUser?.email||"",targetUid:uid,targetPublicId:member.publicId||"",adjustmentType:action,adjustmentBDT:amountBDT,beforeBalanceBDT:balance,afterBalanceBDT:nextBalance,reason,createdAt:serverTimestamp()});
   });
-  await writeActivity("Manual wallet credit",(member.email||uid)+" · ৳"+amountBDT.toLocaleString("en-US")+" BDT");
-  messageStatus(status,"Success: ৳"+amountBDT.toLocaleString("en-US")+" added to "+(member.email||uid)+".");
-  document.getElementById("manualCreditBDT").value="";updateManualCreditPreview();await loadMembers();await loadActivity();
- }catch(e){messageStatus(status,"Could not add wallet balance: "+e.message,true);}
- finally{button.disabled=false;button.textContent="Add Balance to Member Wallet";}
+  messageStatus(status,"Success. New Main Wallet balance: ৳"+(action==="credit"?Number(member.walletBalanceBDT||0)+amountBDT:Number(member.walletBalanceBDT||0)-amountBDT).toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2})+". Adjustment saved in the admin activity log.");
+  document.getElementById("manualCreditBDT").value="";document.getElementById("manualBalanceReason").value="";await loadMembers();await loadActivity();
+ }catch(e){messageStatus(status,"Could not update wallet balance: "+e.message,true);}
+ finally{button.disabled=false;button.textContent="Update Member Balance";}
 });
 async function loadPaymentAccounts(){
  const status=document.getElementById("paymentAccountsStatus");
