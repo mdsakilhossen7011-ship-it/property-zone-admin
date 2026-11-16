@@ -178,6 +178,13 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
      <label class="field" for="sitePhone">CONTACT PHONE (OPTIONAL)</label><input class="control" id="sitePhone" type="tel" maxlength="30" placeholder="+880...">
     </div>
    </div>
+   
+   <div style="border:1px solid #584729;border-radius:12px;padding:15px;margin:0 0 16px;background:#17150f">
+    <div class="eyebrow">PUBLIC WEBSITE ACCESS</div><h3 style="margin:4px 0 8px">Maintenance Mode</h3>
+    <label class="field" for="maintenanceEnabled">WEBSITE STATUS</label><select class="control" id="maintenanceEnabled"><option value="false">ON — Website available to users</option><option value="true">OFF — Show maintenance page to users</option></select>
+    <label class="field" for="maintenanceMessage">MAINTENANCE MESSAGE (OPTIONAL)</label><textarea class="control" id="maintenanceMessage" maxlength="400" rows="3" placeholder="We are improving the website. Please check back soon."></textarea>
+    <button class="send" id="saveMaintenanceSettings" type="button" style="cursor:pointer;opacity:1">Save Website ON/OFF</button><p class="fineprint" id="maintenanceAdminStatus" role="status">Admin Panel stays available when the public website is OFF.</p>
+   </div>
    <button class="send" id="saveSiteSettings" type="button" style="cursor:pointer;opacity:1">Save Website Settings</button>
    <p class="fineprint" id="settingsStatus" role="status">Logo and favicon URL changes are applied to the public website after refresh. Direct file upload is not enabled.</p>
   </section>
@@ -675,6 +682,7 @@ document.getElementById("saveWalletLimits").addEventListener("click",async()=>{
  finally{button.disabled=false;button.textContent="Save Minimum Amounts";}
 });
 async function loadSiteSettings(){
+ loadMaintenanceSettings();
  loadMysteryBoxSettings();
  loadPaymentAccounts();loadWalletLimits();loadPropertyProfitRate();
  try{
@@ -708,6 +716,25 @@ settingsButton.addEventListener("click",async()=>{
  }catch(e){
   settingsStatus.textContent="Save হয়নি। Firestore Rules-এ admin-এর siteSettings write permission যোগ করতে হবে।";
  }finally{settingsButton.disabled=false;settingsButton.textContent="Save Website Settings";}
+});
+
+
+async function loadMaintenanceSettings(){
+ const status=document.getElementById('maintenanceAdminStatus');
+ try{const snap=await getDoc(doc(db,'siteSettings','maintenance')),s=snap.exists()?snap.data():{};
+  document.getElementById('maintenanceEnabled').value=s.enabled===true?'true':'false';
+  document.getElementById('maintenanceMessage').value=s.message||'';
+  if(status)status.textContent=s.enabled===true?'Public website is currently OFF. Admin Panel remains available.':'Public website is currently ON.';
+ }catch(e){if(status)status.textContent='Could not load maintenance status: '+e.message;}
+}
+document.getElementById('saveMaintenanceSettings').addEventListener('click',async()=>{
+ const button=document.getElementById('saveMaintenanceSettings'),status=document.getElementById('maintenanceAdminStatus'),enabled=document.getElementById('maintenanceEnabled').value==='true',message=document.getElementById('maintenanceMessage').value.trim();
+ button.disabled=true;button.textContent='Saving…';if(status)status.textContent='Saving website status…';
+ try{await setDoc(doc(db,'siteSettings','maintenance'),{enabled,message:message||'We are improving the website. Please check back soon.',updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||''},{merge:true});
+  if(status)status.textContent=enabled?'Saved. Public website is now set to OFF (maintenance page). Admin Panel remains available.':'Saved. Public website is now set to ON.';
+  await writeActivity('Changed public website status',enabled?'Maintenance mode ON':'Website ON');await loadActivity();
+ }catch(e){if(status)status.textContent='Could not save website status: '+e.message;}
+ finally{button.disabled=false;button.textContent='Save Website ON/OFF';}
 });
 
 async function loadMysteryBoxSettings(){
