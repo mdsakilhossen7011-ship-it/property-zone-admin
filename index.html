@@ -57,7 +57,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    <article class="module" id="members"><div class="moduleicon">♙</div><div><h3>Member Management</h3><p>Review member accounts and manage account status with admin-only permissions.</p><span class="state">FIRESTORE CONNECTED</span></div></article>
   <section class="panel" id="memberManager" style="grid-column:1/-1;margin-top:4px">
    <div class="eyebrow">MEMBER DIRECTORY</div><h2>Registered Members</h2>
-   <div style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0"><input class="control" id="memberSearch" type="search" placeholder="Search by 7-digit ID, name, email or UID..." style="flex:1;min-width:180px"><button class="btn" id="refreshMembers" type="button">Refresh Members</button></div>
+   <div style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0"><input class="control" id="memberSearch" type="search" placeholder="Search by 7-digit ID, name or email..." style="flex:1;min-width:180px"><button class="btn" id="refreshMembers" type="button">Refresh Members</button></div>
    <p class="fineprint" id="memberStatus" role="status">Loading members…</p>
    <div id="memberList" class="quicklist"></div>
   </section>
@@ -466,7 +466,7 @@ async function ensureAdminPublicId(uid){const mappingRef=doc(db,"publicUserIds",
 function renderMembers(){
  const q=(document.getElementById("memberSearch").value||"").toLowerCase().trim();
  memberList.innerHTML="";
- const rows=memberRecords.filter(m=>!q||String(m.email||"").toLowerCase().includes(q)||String(m.publicId||"").includes(q)||String(m.name||"").toLowerCase().includes(q)||String(m.uid||"").toLowerCase().includes(q));
+ const rows=memberRecords.filter(m=>!q||String(m.email||"").toLowerCase().includes(q)||String(m.publicId||"").includes(q)||String(m.name||"").toLowerCase().includes(q));
  if(!rows.length){memberStatus.textContent=q?"No matching member found.":"No member accounts found.";memberList.textContent="No matching member.";return;}
  memberStatus.textContent=rows.length+" of "+memberRecords.length+" member(s) · Current Main Wallet balance shown in BDT.";
  rows.forEach(m=>{
@@ -475,7 +475,7 @@ function renderMembers(){
   const name=document.createElement("strong");name.textContent=m.name||"Unnamed member";
   const email=document.createElement("div");email.className="fineprint";email.textContent=m.email||"No email";
   const phone=document.createElement("div");phone.className="fineprint";phone.textContent="Phone: "+(m.phoneNumber||"Not provided");
-  const uid=document.createElement("div");uid.className="fineprint";uid.textContent="Member ID: "+(m.publicId||"Not assigned")+" · Firebase UID: "+m.uid;
+  const uid=document.createElement("div");uid.className="fineprint";uid.textContent="Member ID: "+(m.publicId||"Not assigned");
   const balance=document.createElement("div");balance.className="fineprint";balance.style.color="#ffe2a0";balance.style.fontWeight="800";balance.textContent="Main Wallet: "+(m.walletBalanceBDT===null?"Needs review":"৳"+Number(m.walletBalanceBDT||0).toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2}));
   const status=document.createElement("div");status.className="fineprint";status.textContent="Status: "+(m.status||"unknown");
   const actions=document.createElement("div");actions.style.cssText="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end";
