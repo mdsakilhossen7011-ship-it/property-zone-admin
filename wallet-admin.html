@@ -149,7 +149,7 @@ $("migrationBtn").addEventListener("click",async()=>{
  button.disabled=true;message.textContent="Checking legacy wallet and active packages…";
  try{
   const settingsSnap=await getDoc(doc(db,"siteSettings","wallet")),settings=settingsSnap.exists()?settingsSnap.data():{};
-  const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\\/+$/,"");
+  const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\/+$/,"");
   if(!apiBase)throw new Error("Wallet Ledger API URL is not configured in siteSettings/wallet.");
   const apiUrl=new URL(apiBase);if(apiUrl.protocol!=="https:")throw new Error("Wallet API must use HTTPS.");
   const token=await activeUser.getIdToken();
@@ -163,7 +163,7 @@ $("migrationBtn").addEventListener("click",async()=>{
 async function reviewRequest(id,action){
  const settingsSnap=await getDoc(doc(db,"siteSettings","wallet"));
  const settings=settingsSnap.exists()?settingsSnap.data():{};
- const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\\/+$/,"");
+ const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\/+$/,"");
  if(!apiBase)throw new Error("Wallet Ledger API URL is not configured in siteSettings/wallet.");
  let apiUrl;try{apiUrl=new URL(apiBase);}catch(_){throw new Error("Wallet API URL is invalid.");}
  if(apiUrl.protocol!=="https:")throw new Error("Wallet API must use HTTPS.");
