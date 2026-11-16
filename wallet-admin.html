@@ -132,34 +132,19 @@ document.addEventListener("click",async e=>{
  finally{busy.delete(id);render();}
 });
 async function reviewRequest(id,action){
- const requestRef=doc(db,"propertyEnquiries",id);
- await runTransaction(db,async tx=>{
-  const requestSnap=await tx.get(requestRef);if(!requestSnap.exists())throw new Error("Request no longer exists.");
-  const r=requestSnap.data();if(r.status!=="pending")throw new Error("This request has already been processed.");
-  if(!["wallet-deposit","wallet-withdraw"].includes(r.requestType))throw new Error("Unsupported request type.");
-  const amount=Number(r.amountBDT);if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("Invalid request amount.");
-  const walletRef=doc(db,"wallets",r.uid),walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};
-  if(r.requestType==="wallet-deposit"&&action==="approve"){throw new Error("Deposit approval is paused until the segregated Deposit Balance credit endpoint is enabled. This prevents crediting the legacy combined wallet.");}
-  if(r.requestType==="wallet-deposit"&&action==="approve"){
-   let balance=Number(wallet.balanceBDT??0);if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review before crediting.");
-   tx.set(walletRef,{uid:r.uid,balanceBDT:Math.round((balance+amount)*100)/100,updatedAt:serverTimestamp(),lastDepositRequestId:id},{merge:true});
-  }
-  if(r.requestType==="wallet-withdraw"){
-   if(action==="approve")throw new Error("Segregated Wallet Withdrawal approval is not enabled yet. Do not approve through the legacy combined wallet.");
-   if(!walletSnap.exists())throw new Error("Member wallet is missing; cannot safely process withdrawal.");
-   const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0));
-   if(r.reservedFunds===true&&pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
-   if(action==="approve"){
-    if(r.reservedFunds!==true)throw new Error("This legacy withdrawal has no reserved-funds marker. Manual review is required.");
-    let balance=Number(wallet.balanceBDT??0);if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review.");
-    if(balance+0.000001<amount)throw new Error("Wallet balance is lower than the withdrawal amount.");
-    tx.update(walletRef,{balanceBDT:Math.round((balance-amount)*100)/100,pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
-   }else if(r.reservedFunds===true){
-    tx.update(walletRef,{pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalRejectedId:id});
-   }
-  }
-  tx.update(requestRef,{status:action==="approve"?"approved":"rejected",reviewedAt:serverTimestamp(),reviewedBy:activeUser.email});
+ const settingsSnap=await getDoc(doc(db,"siteSettings","wallet"));
+ const settings=settingsSnap.exists()?settingsSnap.data():{};
+ const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\\/+$/,"");
+ if(!apiBase)throw new Error("Wallet Ledger API URL is not configured in siteSettings/wallet.");
+ let apiUrl;try{apiUrl=new URL(apiBase);}catch(_){throw new Error("Wallet API URL is invalid.");}
+ if(apiUrl.protocol!=="https:")throw new Error("Wallet API must use HTTPS.");
+ const token=await activeUser.getIdToken();
+ const response=await fetch(apiUrl.href+"/v1/admin/wallet-decision",{
+  method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
+  body:JSON.stringify({requestId:id,action})
  });
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(result.error||"Server-side wallet review failed.");
 }
 </script>
 </body>
