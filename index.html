@@ -147,6 +147,17 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
    <article class="module" id="commission"><div class="moduleicon">◇</div><div><h3>Referrals & Commission</h3><p>Review registered referral signups and manage the commission rate. Payouts require eligible transaction records.</p><span class="state">REFERRAL TRACKING ACTIVE · PAYOUTS PENDING</span></div></article>
 <section class="panel" id="commissionManager" style="grid-column:1/-1;margin-top:4px"><div class="eyebrow">PARTNER PROGRAM</div><h2>Referral & Commission Manager</h2><p class="desc">Set the commission rate and review referral activity. Payouts remain pending until eligible transactions are connected.</p><label class="field" for="commissionRate">COMMISSION RATE (%)</label><div style="display:flex;gap:10px;flex-wrap:wrap"><input class="control" id="commissionRate" type="number" min="0" max="100" step="0.5" value="10" style="max-width:180px"><button class="send" id="saveCommissionRate" type="button" style="width:auto;margin:0;cursor:pointer;opacity:1">Save Rate</button><button class="btn" id="refreshReferrals" type="button" onclick="window.pzRefreshReferrals&&window.pzRefreshReferrals()">Refresh Referrals</button></div><p class="fineprint" id="commissionStatus" role="status">Default rate: 10%. Save to apply.</p><div class="stats" style="margin-top:14px"><div class="stat"><div class="stathead">TOTAL REFERRALS</div><div class="statvalue" id="referralCount">0</div></div><div class="stat"><div class="stathead">ACTIVE REFERRED MEMBERS</div><div class="statvalue" id="activeReferralCount">0</div></div></div><div class="sectionhead"><div><h2>Referral Records</h2><p>Members grouped by the referral code they entered</p></div></div><div id="referralList" class="quicklist"><div class="activityempty">Referral records will appear here.</div></div></section>
   </div>
+
+  <section class="panel" id="mysteryBoxManager" style="margin-top:18px">
+   <div class="eyebrow">REWARD CAMPAIGN</div><h2>🎁 Mystery Box Manager</h2><p class="desc">Control the free Mystery Box promotion shown on the public homepage. This panel configures the display and Telegram destination; it does not automatically credit wallet money or run a random draw.</p>
+   <label class="field" for="mysteryBoxEnabled">MYSTERY BOX STATUS</label><select class="control" id="mysteryBoxEnabled"><option value="false">OFF — Hidden from homepage</option><option value="true">ON — Show on homepage</option></select>
+   <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
+    <div><label class="field" for="mysteryBoxRewardAmount">DISPLAY REWARD AMOUNT (BDT ৳)</label><input class="control" id="mysteryBoxRewardAmount" type="number" min="0" max="1000000" step="1" value="100"><label class="field" for="mysteryBoxClaimLimit">CLAIM LIMIT</label><input class="control" id="mysteryBoxClaimLimit" type="number" min="0" max="100000" step="1" value="10"></div>
+    <div><label class="field" for="mysteryBoxTelegramUrl">TELEGRAM GROUP / CLAIM LINK</label><input class="control" id="mysteryBoxTelegramUrl" type="url" maxlength="500" placeholder="https://t.me/yourgroup"><label class="field" for="mysteryBoxNoteInput">SMALL NOTE</label><input class="control" id="mysteryBoxNoteInput" maxlength="120" placeholder="Free Telegram claim required"></div>
+   </div>
+   <button class="send" id="saveMysteryBoxSettings" type="button" style="cursor:pointer;opacity:1">Save Mystery Box Settings</button>
+   <p class="fineprint" id="mysteryBoxAdminStatus" role="status">Mystery Box is hidden until enabled and saved.</p>
+  </section>
   <section class="panel" id="settings" style="margin-top:18px">
    <div class="eyebrow">PLATFORM CONFIGURATION</div><h2>Website Settings</h2><p class="desc">Update the public website identity and contact details. Changes are saved to Firebase when the database rules allow admin access.</p>
    <div class="modules" style="grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none">
@@ -634,7 +645,7 @@ document.getElementById("saveWalletLimits").addEventListener("click",async()=>{
  }catch(e){messageStatus(status,"Save failed: "+e.message,true);}
  finally{button.disabled=false;button.textContent="Save Minimum Amounts";}
 });
-async function loadSiteSettings(){
+async function loadSiteSettings(){\n loadMysteryBoxSettings();
  loadPaymentAccounts();loadWalletLimits();loadPropertyProfitRate();
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
@@ -668,7 +679,32 @@ settingsButton.addEventListener("click",async()=>{
   settingsStatus.textContent="Save হয়নি। Firestore Rules-এ admin-এর siteSettings write permission যোগ করতে হবে।";
  }finally{settingsButton.disabled=false;settingsButton.textContent="Save Website Settings";}
 });
-function showError(message){ errorBox.textContent = message; }
+
+async function loadMysteryBoxSettings(){
+ const status=document.getElementById('mysteryBoxAdminStatus');
+ try{const snap=await getDoc(doc(db,'siteSettings','mysteryBox')),s=snap.exists()?snap.data():{};
+  document.getElementById('mysteryBoxEnabled').value=s.enabled===true?'true':'false';
+  document.getElementById('mysteryBoxRewardAmount').value=String(Number.isFinite(Number(s.rewardAmount))?Number(s.rewardAmount):100);
+  document.getElementById('mysteryBoxClaimLimit').value=String(Number.isFinite(Number(s.claimLimit))?Number(s.claimLimit):10);
+  document.getElementById('mysteryBoxTelegramUrl').value=s.telegramUrl||'';
+  document.getElementById('mysteryBoxNoteInput').value=s.note||'Free Telegram claim required';
+  if(status)status.textContent=s.enabled===true?'Mystery Box settings loaded.':'Mystery Box is currently OFF.';
+ }catch(e){if(status)status.textContent='Could not load Mystery Box settings: '+e.message;}
+}
+document.getElementById('saveMysteryBoxSettings').addEventListener('click',async()=>{
+ const button=document.getElementById('saveMysteryBoxSettings'),status=document.getElementById('mysteryBoxAdminStatus');
+ const rewardAmount=Number(document.getElementById('mysteryBoxRewardAmount').value),claimLimit=Number(document.getElementById('mysteryBoxClaimLimit').value),telegramUrl=document.getElementById('mysteryBoxTelegramUrl').value.trim();
+ if(!Number.isSafeInteger(rewardAmount)||rewardAmount<0||rewardAmount>1000000){status.textContent='Enter a valid reward display amount.';return;}
+ if(!Number.isSafeInteger(claimLimit)||claimLimit<0||claimLimit>100000){status.textContent='Enter a valid claim limit.';return;}
+ if(telegramUrl&&!/^https:\/\/(t\.me|telegram\.me)\//i.test(telegramUrl)){status.textContent='Use an official https://t.me/ Telegram link.';return;}
+ button.disabled=true;button.textContent='Saving…';status.textContent='Saving Mystery Box settings…';
+ try{await setDoc(doc(db,'siteSettings','mysteryBox'),{enabled:document.getElementById('mysteryBoxEnabled').value==='true',rewardAmount,claimLimit,telegramUrl,note:document.getElementById('mysteryBoxNoteInput').value.trim().slice(0,120),updatedAt:serverTimestamp(),updatedBy:auth.currentUser?.uid||''},{merge:true});
+  await writeActivity('Updated Mystery Box settings','Status: '+(document.getElementById('mysteryBoxEnabled').value==='true'?'ON':'OFF')+' · Display reward ৳'+rewardAmount+' · Claim limit '+claimLimit);
+  status.textContent='Saved. Refresh the public homepage to see the updated Mystery Box.';await loadActivity();
+ }catch(e){status.textContent='Save failed: '+e.message;}
+ finally{button.disabled=false;button.textContent='Save Mystery Box Settings';}
+});
+\nfunction showError(message){ errorBox.textContent = message; }
 let authorizedUid=null;
 let authQueue=Promise.resolve();
 const authorizationTasks=new Map();
