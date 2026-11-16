@@ -1,0 +1,31 @@
+name: Admin Wallet Frontend Checks
+
+on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "wallet-admin.html"
+      - "scripts/check-inline-scripts.js"
+      - ".github/workflows/admin-wallet-checks.yml"
+  push:
+    branches:
+      - "feature/segregated-wallet-backend-2026-11-17"
+    paths:
+      - "index.html"
+      - "wallet-admin.html"
+      - "scripts/check-inline-scripts.js"
+      - ".github/workflows/admin-wallet-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check admin inline JavaScript syntax
+        run: node scripts/check-inline-scripts.js index.html wallet-admin.html
