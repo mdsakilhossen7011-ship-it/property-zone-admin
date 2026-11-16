@@ -645,7 +645,8 @@ document.getElementById("saveWalletLimits").addEventListener("click",async()=>{
  }catch(e){messageStatus(status,"Save failed: "+e.message,true);}
  finally{button.disabled=false;button.textContent="Save Minimum Amounts";}
 });
-async function loadSiteSettings(){\n loadMysteryBoxSettings();
+async function loadSiteSettings(){
+ loadMysteryBoxSettings();
  loadPaymentAccounts();loadWalletLimits();loadPropertyProfitRate();
  try{
   const snap = await getDoc(doc(db,"siteSettings","general"));
