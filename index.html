@@ -563,10 +563,12 @@ async function processMaturedPackages(){
    if(!started||now<started+termMs)continue;
    const packageRef=doc(db,"activePackages",item.id),walletRef=doc(db,"wallets",item.data().uid);
    try{
-    await runTransaction(db,async tx=>{
-     const ps=await tx.get(packageRef);if(!ps.exists())return;
-     const p=ps.data(),start=p.startedAt?.toMillis?.();if(p.status!=="active"||!start||Date.now()<start+termMs)return;
-     const [settingsSnap,profitSnap]=await Promise.all([tx.get(settingsRef),tx.get(profitSettingsRef)]),settings=settingsSnap.exists()?settingsSnap.data():{},profitSettings=profitSnap.exists()?profitSnap.data():{},profitHistory=Array.isArray(profitSettings.history)?profitSettings.history:[],legacyRate=Number(settings.exchangeRateBDT||0);
+    const maturedResult=await runTransaction(db,async tx=>{
+     const ps=await tx.get(packageRef);if(!ps.exists())return false;
+     const p=ps.data(),start=p.startedAt?.toMillis?.();if(p.status!=="active"||!start||Date.now()<start+termMs)return false;
+     const ledgerRef=doc(db,"walletLedgers",p.uid),[settingsSnap,profitSnap,ledgerSnap]=await Promise.all([tx.get(settingsRef),tx.get(profitSettingsRef),tx.get(ledgerRef)]);
+     if(ledgerSnap.exists()&&Number(ledgerSnap.data().schemaVersion||0)===1)return false;
+     const settings=settingsSnap.exists()?settingsSnap.data():{},profitSettings=profitSnap.exists()?profitSnap.data():{},profitHistory=Array.isArray(profitSettings.history)?profitSettings.history:[],legacyRate=Number(settings.exchangeRateBDT||0);
      const principal=Number(p.amountBDT||(Number(p.amountUSD||0)*Number(p.exchangeRateBDT||legacyRate)));
      if(!Number.isFinite(principal)||principal<=0)throw new Error("Invalid package amount or missing saved conversion rate.");
      const totalEarnings=Math.round(propertyProfitBetween(principal,start,start+termMs,profitHistory,Number(p.dailyRate)||0.02)*100)/100,alreadyPaid=Math.max(0,Number(p.dailyEarningsPaidBDT||0)),earnings=Math.max(0,Math.round((totalEarnings-alreadyPaid)*100)/100),payout=Math.round((principal+earnings)*100)/100;
@@ -575,7 +577,8 @@ async function processMaturedPackages(){
      const nextBalance=Math.round((balance+payout)*100)/100;
      if(ws.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid:p.uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
      tx.update(packageRef,{status:"completed",termDays:30,completedAt:serverTimestamp(),maturityEarningsBDT:earnings,maturityPayoutBDT:payout});
-    });processed++;
+     return true;
+    });if(maturedResult)processed++;
    }catch(e){skipped++;console.warn("Maturity processing failed:",item.id,e.message);}
   }
   if(status)status.textContent="Maturity check complete: "+processed+" package(s) credited; "+skipped+" issue(s).";
@@ -611,8 +614,10 @@ document.getElementById("manualCreditButton").addEventListener("click",async()=>
  try{
   const updatedBalance=await runTransaction(db,async tx=>{
    const memberRef=doc(db,"members",uid),walletRef=doc(db,"wallets",uid),settingsRef=doc(db,"siteSettings","wallet"),logRef=doc(collection(db,"activityLogs"));
-   const [memberSnap,walletSnap,settingsSnap]=await Promise.all([tx.get(memberRef),tx.get(walletRef),tx.get(settingsRef)]);
+   const ledgerRef=doc(db,"walletLedgers",uid);
+   const [memberSnap,walletSnap,settingsSnap,ledgerSnap]=await Promise.all([tx.get(memberRef),tx.get(walletRef),tx.get(settingsRef),tx.get(ledgerRef)]);
    if(!memberSnap.exists())throw new Error("Member account no longer exists.");
+   if(ledgerSnap.exists()&&Number(ledgerSnap.data().schemaVersion||0)===1)throw new Error("This member has a segregated wallet ledger. Legacy Main Wallet adjustment is blocked; use the ledger review process.");
    const settings=settingsSnap.exists()?settingsSnap.data():{},rate=Number(settings.exchangeRateBDT||0),wallet=walletSnap.exists()?walletSnap.data():{};let balance=Number(wallet.balanceBDT);
    if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(rate)||rate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*rate*100)/100;}
    const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0)),nextBalance=Math.round((action==="debit"?balance-amountBDT:balance+amountBDT)*100)/100;
