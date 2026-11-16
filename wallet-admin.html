@@ -45,7 +45,7 @@ const allowedAdmins={
  "bSOdvUtNO4Vxl3lJBuFA2xiREP53":"prologisinvest@gmail.com"
 };
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),storage=getStorage(app);
-let activeUser=null,requests=[],filters={deposit:"pending",withdraw:"pending"},busy=new Set(),proofObjectUrls=new Map();
+let activeUser=null,requests=[],filters={deposit:"pending",withdraw:"pending"},busy=new Set(),proofObjectUrls=new Map(),publicIds=new Map();
 const $=id=>document.getElementById(id);
 const esc=value=>String(value??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=n=>"৳"+Number(n||0).toLocaleString("en-BD",{maximumFractionDigits:2});
@@ -112,7 +112,7 @@ function renderList(kind,items){
   const when=r.createdAt?.toDate?r.createdAt.toDate().toLocaleString():"Date not available";
   const actions=status==="pending"?'<div class="actions"><button class="approve" data-action="approve" data-id="'+esc(r.id)+'" '+(busy.has(r.id)?"disabled":"")+'>✓ Approve</button><button class="reject" data-action="reject" data-id="'+esc(r.id)+'" '+(busy.has(r.id)?"disabled":"")+'>✕ Reject</button></div>':"";
   const proof=isDeposit?(r.paymentProofData?'<div style="margin-top:13px"><div style="font-size:11px;color:var(--muted);margin-bottom:7px;font-weight:800">PAYMENT SCREENSHOT</div><div id="proof-'+esc(r.id)+'" style="padding:10px;background:#0c1727;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px">Loading screenshot…</div></div>':'<div style="margin-top:12px;font-size:12px;color:var(--muted)">No screenshot attached (older request).</div>'):"";
-  return '<article class="request"><div class="req-top"><div><h3>'+esc(r.name||"Member")+'</h3><div class="req-email">'+esc(r.email||r.uid||"No email")+'</div></div><div class="req-amount">'+money(r.amountBDT)+'</div></div><span class="status '+status+'">'+esc(status)+'</span><div class="details">'+detail("Payment method",r.paymentMethod)+detail(isDeposit?"Sender account":"Member account",memberAccount)+detail(isDeposit?"Paid to":"Payout info",payout)+(isDeposit?"":detail("Transaction ID",r.transactionId||"Not applicable"))+detail("Request date",when)+detail("Member UID",r.uid)+'</div>'+proof+actions+'</article>';
+  return '<article class="request"><div class="req-top"><div><h3>'+esc(r.name||"Member")+'</h3><div class="req-email">'+esc(r.email||r.uid||"No email")+'</div></div><div class="req-amount">'+money(r.amountBDT)+'</div></div><span class="status '+status+'">'+esc(status)+'</span><div class="details">'+detail("Payment method",r.paymentMethod)+detail(isDeposit?"Sender account":"Member account",memberAccount)+detail(isDeposit?"Paid to":"Payout info",payout)+(isDeposit?"":detail("Transaction ID",r.transactionId||"Not applicable"))+detail("Request date",when)+detail("Member ID",publicIds.get(r.uid)||"Not assigned yet")+detail("Firebase UID",r.uid)+'</div>'+proof+actions+'</article>';
  }).join("");
  if(kind==="deposit")filtered.forEach(r=>{if(r.paymentProofData)loadDepositProof(r.id,r.paymentProofData);});
 }
