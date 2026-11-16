@@ -116,7 +116,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh}.sidebar{position:fix
 <div class="sectionhead"><div><h3>Process 30-Day Packages</h3><p>Credit matured package payouts to member wallets.</p></div><button class="btn" id="processMaturedPackages" type="button">Process 30-Day Packages</button></div>
 <p class="fineprint" id="maturityStatus" role="status">Matured packages are credited to Main Wallet when the admin panel processes them.</p>
 <div style="border-top:1px solid #303a47;margin-top:22px;padding-top:20px">
-<div class="eyebrow">ADMIN-ONLY BALANCE ADJUSTMENT</div><h3>Manual Wallet Credit</h3>
+<div class="eyebrow">ADMIN-ONLY BALANCE ADJUSTMENT</div><h3>Manual Wallet Balance Adjustment</h3>
 <p class="desc">Add a BDT amount directly to a selected member's Main Wallet. The saved conversion rate is used only for older wallet records.</p>
 <label class="field" for="manualCreditMember">SELECT MEMBER ACCOUNT</label><select class="control" id="manualCreditMember"><option value="">Load members first…</option></select>
 <label class="field" for="manualBalanceAction">BALANCE ACTION</label><select class="control" id="manualBalanceAction"><option value="credit">Increase balance (+)</option><option value="debit">Decrease balance (−)</option></select>
@@ -598,7 +598,7 @@ document.getElementById("manualCreditButton").addEventListener("click",async()=>
  if(!confirm("Confirm wallet "+(action==="credit"?"increase":"decrease")+"?\\nMember: "+(member.name||member.email||uid)+" ("+(member.publicId||uid)+")\\nCurrent: ৳"+Number(member.walletBalanceBDT||0).toLocaleString("en-US")+"\\nAmount: ৳"+amountBDT.toLocaleString("en-US")+"\\nReason: "+reason))return;
  button.disabled=true;button.textContent="Updating…";messageStatus(status,"Checking member and safely updating Main Wallet…");
  try{
-  await runTransaction(db,async tx=>{
+  const updatedBalance=await runTransaction(db,async tx=>{
    const memberRef=doc(db,"members",uid),walletRef=doc(db,"wallets",uid),settingsRef=doc(db,"siteSettings","wallet"),logRef=doc(collection(db,"activityLogs"));
    const [memberSnap,walletSnap,settingsSnap]=await Promise.all([tx.get(memberRef),tx.get(walletRef),tx.get(settingsRef)]);
    if(!memberSnap.exists())throw new Error("Member account no longer exists.");
@@ -609,8 +609,9 @@ document.getElementById("manualCreditButton").addEventListener("click",async()=>
    if(nextBalance<0)throw new Error("Insufficient wallet balance for this decrease.");
    if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});else tx.set(walletRef,{uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});
    tx.set(logRef,{action:action==="credit"?"Admin wallet balance increased":"Admin wallet balance decreased",details:(member.publicId||uid)+" · "+(member.email||member.name||uid)+" · ৳"+amountBDT+" BDT · "+reason,adminUid:auth.currentUser?.uid||"",adminEmail:auth.currentUser?.email||"",targetUid:uid,targetPublicId:member.publicId||"",adjustmentType:action,adjustmentBDT:amountBDT,beforeBalanceBDT:balance,afterBalanceBDT:nextBalance,reason,createdAt:serverTimestamp()});
+   return nextBalance;
   });
-  messageStatus(status,"Success. New Main Wallet balance: ৳"+(action==="credit"?Number(member.walletBalanceBDT||0)+amountBDT:Number(member.walletBalanceBDT||0)-amountBDT).toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2})+". Adjustment saved in the admin activity log.");
+  messageStatus(status,"Success. New Main Wallet balance: ৳"+updatedBalance.toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2})+". Adjustment saved in the admin activity log.");
   document.getElementById("manualCreditBDT").value="";document.getElementById("manualBalanceReason").value="";await loadMembers();await loadActivity();
  }catch(e){messageStatus(status,"Could not update wallet balance: "+e.message,true);}
  finally{button.disabled=false;button.textContent="Update Member Balance";}
