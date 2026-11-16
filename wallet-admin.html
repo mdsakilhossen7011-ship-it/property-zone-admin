@@ -27,6 +27,16 @@ button,input{font:inherit}.wrap{max-width:1400px;margin:auto;padding:26px}.top{d
    <div class="stat"><small>Approved requests</small><strong id="approvedCount">0</strong></div>
    <div class="stat"><small>Rejected requests</small><strong id="rejectedCount">0</strong></div>
   </div>
+  <section class="column" style="margin-bottom:18px">
+   <div class="column-head"><div><h2>Reviewed Legacy Wallet Migration</h2><div class="muted" style="font-size:11px;margin-top:4px">Use only after checking the read-only migration audit and source records.</div></div><span class="tag">MIGRATION</span></div>
+   <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+    <div><label for="migrationUid">Member Firebase UID</label><input id="migrationUid" autocomplete="off" placeholder="Exact Firebase UID"></div>
+    <div><label for="migrationDeposit">Deposit Balance (BDT)</label><input id="migrationDeposit" type="number" min="0" step="0.01" value="0"></div>
+    <div><label for="migrationPackage">Active Package Principal (BDT)</label><input id="migrationPackage" type="number" min="0" step="0.01" value="0"></div>
+    <div><label for="migrationProfit">Profit Balance (BDT)</label><input id="migrationProfit" type="number" min="0" step="0.01" value="0"></div>
+   </div>
+   <div style="padding:0 18px 18px"><button id="migrationBtn" class="btn" type="button">Run reviewed migration</button><p id="migrationMessage" class="message" role="status">Migration is blocked if legacy balance splits do not reconcile exactly or pending legacy withdrawals exist.</p></div>
+  </section>
   <main class="columns">
    <section class="column deposit"><div class="column-head"><div><h2>Deposit Requests</h2><div class="muted" style="font-size:11px;margin-top:4px">Verify payment received before approval</div></div><span class="tag">DEPOSIT</span></div><div class="filters" data-kind="deposit"><button class="filter active" data-filter="pending">Pending</button><button class="filter" data-filter="approved">Approved</button><button class="filter" data-filter="rejected">Rejected</button><button class="filter" data-filter="all">All</button></div><div id="depositList" class="list"><div class="empty">Loading requests…</div></div></section>
    <section class="column withdraw"><div class="column-head"><div><h2>Withdrawal Requests</h2><div class="muted" style="font-size:11px;margin-top:4px">Send payout before approval</div></div><span class="tag">WITHDRAW</span></div><div class="filters" data-kind="withdraw"><button class="filter active" data-filter="pending">Pending</button><button class="filter" data-filter="approved">Approved</button><button class="filter" data-filter="rejected">Rejected</button><button class="filter" data-filter="all">All</button></div><div id="withdrawList" class="list"><div class="empty">Loading requests…</div></div></section>
@@ -130,6 +140,25 @@ document.addEventListener("click",async e=>{
  try{await reviewRequest(id,action);$("appMessage").textContent="Request "+(action==="approve"?"approved":"rejected")+" successfully.";await loadRequests();}
  catch(error){$("appMessage").textContent="Action failed: "+error.message;}
  finally{busy.delete(id);render();}
+});
+$("migrationBtn").addEventListener("click",async()=>{
+ const uid=$("migrationUid").value.trim(),depositBDT=Number($("migrationDeposit").value),packageBDT=Number($("migrationPackage").value),profitBDT=Number($("migrationProfit").value);
+ const message=$("migrationMessage"),button=$("migrationBtn");
+ if(!uid||![depositBDT,packageBDT,profitBDT].every(n=>Number.isFinite(n)&&n>=0)){message.textContent="Enter a valid UID and non-negative BDT classifications.";return;}
+ if(!confirm("Confirm only after verifying the member's ledger split from the audit and source records. This creates the new ledger and cannot be repeated."))return;
+ button.disabled=true;message.textContent="Checking legacy wallet and active packages…";
+ try{
+  const settingsSnap=await getDoc(doc(db,"siteSettings","wallet")),settings=settingsSnap.exists()?settingsSnap.data():{};
+  const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\\/+$/,"");
+  if(!apiBase)throw new Error("Wallet Ledger API URL is not configured in siteSettings/wallet.");
+  const apiUrl=new URL(apiBase);if(apiUrl.protocol!=="https:")throw new Error("Wallet API must use HTTPS.");
+  const token=await activeUser.getIdToken();
+  const response=await fetch(apiUrl.href+"/v1/admin/migrate-member",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({uid,depositBDT,packageBDT,profitBDT})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Migration failed.");
+  message.textContent="Migration created for "+result.uid+". Deposit ৳"+result.depositBDT+", Package ৳"+result.packageBDT+", Profit ৳"+result.profitBDT+".";
+ }catch(error){message.textContent="Migration blocked: "+error.message;}
+ finally{button.disabled=false;}
 });
 async function reviewRequest(id,action){
  const settingsSnap=await getDoc(doc(db,"siteSettings","wallet"));
