@@ -438,21 +438,6 @@ document.getElementById("saveOfferDraft").addEventListener("click",()=>saveOffer
 document.getElementById("publishOffer").addEventListener("click",()=>saveOffer("published"));
 document.getElementById("refreshOffers").addEventListener("click",loadOffers);
 
-async function ensureAdminPublicId(uid){
- const mappingRef=doc(db,"publicUserIds",uid),old=await getDoc(mappingRef);
- if(old.exists()&&/^\\d{7}$/.test(String(old.data().publicId||'')))return String(old.data().publicId);
- for(let attempt=0;attempt<25;attempt++){
-  const publicId=String(Math.floor(1000000+Math.random()*9000000)),registryRef=doc(db,"publicUserIdRegistry",publicId);
-  const result=await runTransaction(db,async tx=>{
-   const mapping=await tx.get(mappingRef);
-   if(mapping.exists()&&/^\\d{7}$/.test(String(mapping.data().publicId||'')))return String(mapping.data().publicId);
-   const registry=await tx.get(registryRef);if(registry.exists())return null;
-   tx.set(registryRef,{uid,createdAt:serverTimestamp()});tx.set(mappingRef,{uid,publicId,createdAt:serverTimestamp()});return publicId;
-  });
-  if(result)return result;
- }
- throw new Error("Could not allocate a unique 7-digit Member ID for "+uid);
-}
 async function ensureAdminPublicId(uid){const mappingRef=doc(db,"publicUserIds",uid),old=await getDoc(mappingRef);if(old.exists()&&/^\d{7}$/.test(String(old.data().publicId||'')))return String(old.data().publicId);for(let attempt=0;attempt<25;attempt++){const publicId=String(Math.floor(1000000+Math.random()*9000000)),registryRef=doc(db,"publicUserIdRegistry",publicId);const result=await runTransaction(db,async tx=>{const mapping=await tx.get(mappingRef);if(mapping.exists()&&/^\d{7}$/.test(String(mapping.data().publicId||'')))return String(mapping.data().publicId);const registry=await tx.get(registryRef);if(registry.exists())return null;tx.set(registryRef,{uid,createdAt:serverTimestamp()});tx.set(mappingRef,{uid,publicId,createdAt:serverTimestamp()});return publicId;});if(result)return result;}throw new Error("Could not allocate a unique 7-digit Member ID for "+uid);}
 function renderMembers(){
  const q=(document.getElementById("memberSearch").value||"").toLowerCase().trim();
@@ -481,7 +466,7 @@ async function loadMembers(){
   const mappingSnap=await getDocs(collection(db,"publicUserIds"));
   const ids=new Map(mappingSnap.docs.map(d=>[d.id,String(d.data().publicId||"")]));
   memberRecords=snap.docs.map(d=>({uid:d.id,...d.data(),publicId:ids.get(d.id)||""}));
-  for(const member of memberRecords){if(!/^\\d{7}$/.test(member.publicId)){member.publicId=await ensureAdminPublicId(member.uid);}}
+  for(const member of memberRecords){if(!/^\d{7}$/.test(member.publicId)){member.publicId=await ensureAdminPublicId(member.uid);}}
   renderMembers();renderManualCreditMembers();
  }catch(e){memberStatus.textContent="Could not load members: "+e.message;memberList.textContent="Check Firestore Rules and admin permissions.";}
 }
