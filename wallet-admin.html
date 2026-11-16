@@ -139,6 +139,7 @@ async function reviewRequest(id,action){
   if(!["wallet-deposit","wallet-withdraw"].includes(r.requestType))throw new Error("Unsupported request type.");
   const amount=Number(r.amountBDT);if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("Invalid request amount.");
   const walletRef=doc(db,"wallets",r.uid),walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};
+  if(r.requestType==="wallet-deposit"&&action==="approve"){throw new Error("Deposit approval is paused until the segregated Deposit Balance credit endpoint is enabled. This prevents crediting the legacy combined wallet.");}
   if(r.requestType==="wallet-deposit"&&action==="approve"){
    let balance=Number(wallet.balanceBDT??0);if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review before crediting.");
    tx.set(walletRef,{uid:r.uid,balanceBDT:Math.round((balance+amount)*100)/100,updatedAt:serverTimestamp(),lastDepositRequestId:id},{merge:true});
