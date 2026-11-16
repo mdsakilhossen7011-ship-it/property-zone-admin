@@ -704,7 +704,7 @@ document.getElementById('saveMysteryBoxSettings').addEventListener('click',async
  }catch(e){status.textContent='Save failed: '+e.message;}
  finally{button.disabled=false;button.textContent='Save Mystery Box Settings';}
 });
-\nfunction showError(message){ errorBox.textContent = message; }
+function showError(message){ errorBox.textContent = message; }
 let authorizedUid=null;
 let authQueue=Promise.resolve();
 const authorizationTasks=new Map();
