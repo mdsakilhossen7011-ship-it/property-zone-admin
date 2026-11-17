@@ -60,6 +60,8 @@ main{width:min(1120px,100%);margin:auto;padding:34px clamp(15px,4vw,42px) 60px}
 .notice{display:flex;gap:12px;padding:15px;border:1px solid #594626;border-radius:12px;background:#211b11;color:#ddc99f;font-size:12px}
 .notice strong{display:block;color:var(--gold2);margin-bottom:3px}
 .footer{padding-top:22px;margin-top:28px;border-top:1px solid #2c261c;color:#777064;font-size:10px}
+
+.prize-editor{margin-top:10px}.prize-editor textarea{width:100%;min-height:118px;resize:vertical;line-height:1.8;font-weight:750;letter-spacing:.4px}.prize-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}.prize-summary>div{padding:12px;border:1px solid #40331f;border-radius:11px;background:#0d0d0c}.prize-summary small{display:block;color:#a9a39a;font-size:10px;font-weight:800;letter-spacing:.8px}.prize-summary strong{display:block;color:#f2d58a;font-size:21px;margin-top:4px}.prize-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.prize-chip{padding:6px 10px;border:1px solid #574629;border-radius:20px;background:#211b11;color:#f2d58a;font-weight:800;font-size:12px}.prize-chip.invalid{border-color:#633a35;color:#ffaaa5}.prize-help{color:#a9a39a;font-size:11px;margin-top:7px}.prize-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.prize-actions .btn{min-width:170px}@media(max-width:650px){.prize-summary{grid-template-columns:1fr 1fr}.prize-summary>div:last-child{grid-column:1/-1}.prize-actions .btn{flex:1}}
 @media(max-width:650px){.topbar{align-items:flex-start}.top-actions{flex-wrap:wrap;justify-content:flex-end}.pill{display:none}.hero{align-items:flex-start}.hero-art{width:65px;height:65px;font-size:34px}.stats{grid-template-columns:1fr;gap:9px}.stat{padding:13px}.stat-value{font-size:22px}.form-grid{grid-template-columns:1fr}.panel{padding:17px}.actions .btn{flex:1}.brandname{font-size:10px}}
 </style>
 </head>
@@ -110,6 +112,17 @@ main{width:min(1120px,100%);margin:auto;padding:34px clamp(15px,4vw,42px) 60px}
    <p class="status" id="settingsStatus" role="status">Loading current settings…</p>
   </section>
 
+
+  <section class="panel prize-editor">
+   <div class="panel-head"><div><div class="eyebrow">Fixed reward inventory</div><h2>Prize Pool Manager</h2><p class="desc">একটি Mystery Box-এর জন্য একাধিক নির্দিষ্ট Bonus সাজিয়ে রাখো। প্রতিটি অঙ্ক একবার করে ব্যবহারের জন্য তালিকায় থাকবে।</p></div></div>
+   <label class="field" for="mysteryBoxPrizePool">BONUS AMOUNTS (BDT ৳)</label>
+   <textarea class="control" id="mysteryBoxPrizePool" spellcheck="false" placeholder="10, 20, 30, 10, 100, 50, 400"></textarea>
+   <p class="prize-help">কমা অথবা নতুন লাইন দিয়ে আলাদা করো। যেমন: 10, 20, 30, 100। সর্বোচ্চ ১০০টি Bonus; প্রতিটি ১–১,০০০,০০০ টাকা।</p>
+   <div class="prize-summary"><div><small>TOTAL PRIZES</small><strong id="prizeCount">0</strong></div><div><small>TOTAL BUDGET</small><strong id="prizeBudget">৳0</strong></div><div><small>UNIQUE AMOUNTS</small><strong id="prizeUnique">0</strong></div></div>
+   <div class="eyebrow">Prize preview</div><div class="prize-chips" id="prizePreview"><span class="muted">No prizes added yet.</span></div>
+   <div class="prize-actions"><button class="btn" id="savePrizePoolButton" type="button">Save Prize Pool</button><button class="btn secondary" id="clearPrizePoolButton" type="button">Clear Editor</button></div>
+   <p class="status" id="prizePoolStatus" role="status">Prize pool not loaded yet.</p>
+  </section>
   <section class="panel">
    <div class="eyebrow">Current implementation note</div><h2>How the public box works today</h2>
    <div class="notice"><div>ⓘ</div><div><strong>Display and Telegram redirect only</strong>The current homepage button opens the Telegram link configured above. The existing website does not yet run a random draw, record individual claims or winners, or automatically add prize money to member wallets. This panel will not show fake claim or sales statistics.</div></div>
@@ -172,12 +185,57 @@ async function loadSettings(){
   $("mysteryBoxClaimLimit").value=String(Number.isFinite(Number(s.claimLimit))?Number(s.claimLimit):10);
   $("mysteryBoxTelegramUrl").value=s.telegramUrl||"";
   $("mysteryBoxNoteInput").value=s.note||"Free Telegram claim required";
+  $("mysteryBoxPrizePool").value=Array.isArray(s.prizePool)?s.prizePool.join(", "):"";
+  renderPrizePoolPreview();
   updateSummary();
   setSettingsStatus(snap.exists()?(s.enabled===true?"Settings loaded. Campaign is ON.":"Settings loaded. Campaign is OFF."):"No saved settings yet. Default values are shown.");
  }catch(e){
   setSettingsStatus("Could not load settings: "+(e.message||String(e)),true);
  }
 }
+
+
+function parsePrizePool(){
+ const raw=$("mysteryBoxPrizePool").value.trim();
+ if(!raw)return [];
+ const tokens=raw.split(/[\s,;]+/).filter(Boolean);
+ if(tokens.length>100)throw new Error("Maximum 100 prizes are allowed in one pool.");
+ return tokens.map(v=>{
+  if(!/^\d+$/.test(v))throw new Error("Only whole-number BDT amounts are allowed. Check: "+v);
+  const n=Number(v);if(!Number.isSafeInteger(n)||n<1||n>1000000)throw new Error("Each prize must be between ৳1 and ৳1,000,000.");return n;
+ });
+}
+function renderPrizePoolPreview(){
+ const preview=$("prizePreview");if(!preview)return;
+ try{
+  const prizes=parsePrizePool(),total=prizes.reduce((a,b)=>a+b,0);
+  $("prizeCount").textContent=String(prizes.length);
+  $("prizeBudget").textContent="৳"+total.toLocaleString("en-US");
+  $("prizeUnique").textContent=String(new Set(prizes).size);
+  preview.innerHTML=prizes.length?prizes.map((n,i)=>'<span class="prize-chip">#'+(i+1)+' · ৳'+n.toLocaleString("en-US")+'</span>').join(""):'<span class="muted">No prizes added yet.</span>';
+  return prizes;
+ }catch(e){
+  $("prizeCount").textContent="—";$("prizeBudget").textContent="—";$("prizeUnique").textContent="—";
+  preview.textContent=e.message;
+  throw e;
+ }
+}
+$("mysteryBoxPrizePool").addEventListener("input",()=>{try{renderPrizePoolPreview();$("prizePoolStatus").textContent="Preview updated. Save to store this prize list.";}catch(e){$("prizePoolStatus").textContent=e.message;}});
+$("clearPrizePoolButton").addEventListener("click",()=>{$("mysteryBoxPrizePool").value="";renderPrizePoolPreview();$("prizePoolStatus").textContent="Editor cleared. Saved prize pool has not been changed."});
+$("savePrizePoolButton").addEventListener("click",async()=>{
+ if(!authorizedUid||auth.currentUser?.uid!==authorizedUid){$("prizePoolStatus").textContent="Admin session expired. Please sign in again.";return;}
+ let prizes;try{prizes=parsePrizePool();}catch(e){$("prizePoolStatus").textContent=e.message;return;}
+ if(!prizes.length){$("prizePoolStatus").textContent="Add at least one prize before saving.";return;}
+ const button=$("savePrizePoolButton");button.disabled=true;button.textContent="Saving…";$("prizePoolStatus").textContent="Saving prize pool…";
+ try{
+  const total=prizes.reduce((a,b)=>a+b,0);
+  await setDoc(doc(db,"siteSettings","mysteryBox"),{prizePool:prizes,prizePoolTotalBDT:total,prizePoolUpdatedAt:serverTimestamp(),prizePoolUpdatedBy:authorizedUid},{merge:true});
+  await addDoc(collection(db,"activityLogs"),{action:"Updated Mystery Box prize pool",details:prizes.length+" prizes · Total budget ৳"+total,adminUid:authorizedUid,adminEmail:auth.currentUser?.email||"",createdAt:serverTimestamp()}).catch(e=>console.warn("Prize pool activity log failed:",e));
+  $("prizePoolStatus").textContent="Prize pool saved successfully. Live random claims and wallet credit still require the secure claim backend.";
+  renderPrizePoolPreview();
+ }catch(e){$("prizePoolStatus").textContent="Save failed: "+(e.message||String(e));}
+ finally{button.disabled=false;button.textContent="Save Prize Pool";}
+});
 
 async function authorize(user){
  if(!user){
