@@ -146,7 +146,7 @@ async function reviewRequest(id,action){
   let packageRef=null,packageSnap=null,sourceInfo=null,settingsSnap=null;
   if(r.requestType==="wallet-withdraw"){
    sourceInfo=parseWithdrawalSource(r);
-   if(sourceInfo.source==="legacy")throw new Error("This is an older withdrawal request without a source. Manual review is required; do not approve it as a new source-specific withdrawal.");
+   if(sourceInfo.source==="legacy"&&action==="approve")throw new Error("This is an older withdrawal request without a source. Manual review is required; do not approve it as a new source-specific withdrawal.");
    if(!walletSnap.exists())throw new Error("Member wallet is missing; cannot safely process withdrawal.");
    if(sourceInfo.source==="package"){
     if(!sourceInfo.packageId)throw new Error("Package ID is missing from this withdrawal request.");
