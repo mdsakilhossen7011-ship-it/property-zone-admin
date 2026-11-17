@@ -576,7 +576,7 @@ async function processMaturedPackages(){
      if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(legacyRate)||legacyRate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*legacyRate*100)/100;}
      const profitBalance=Math.max(0,Number(wallet.profitBalanceBDT||0));if(!Number.isFinite(profitBalance))throw new Error("Member profit balance is invalid.");
      const nextBalance=Math.round((balance+principal)*100)/100,nextProfitBalance=Math.round((profitBalance+earnings)*100)/100;
-     if(ws.exists())tx.update(walletRef,{balanceBDT:nextBalance,profitBalanceBDT:nextProfitBalance,updatedAt:serverTimestamp()});else tx.set(walletRef,{uid:p.uid,balanceBDT:nextBalance,profitBalanceBDT:nextProfitBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+     if(ws.exists())tx.update(walletRef,{balanceBDT:nextBalance,profitBalanceBDT:nextProfitBalance,walletSegregationVersion:Number(wallet.walletSegregationVersion||1),updatedAt:serverTimestamp()});else tx.set(walletRef,{uid:p.uid,balanceBDT:nextBalance,profitBalanceBDT:nextProfitBalance,walletSegregationVersion:2,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
      tx.update(packageRef,{status:"completed",termDays:30,completedAt:serverTimestamp(),maturityEarningsBDT:earnings,maturityPayoutBDT:payout});
      return true;
     });if(maturedResult)processed++;
