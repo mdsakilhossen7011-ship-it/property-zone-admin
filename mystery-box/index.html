@@ -131,8 +131,8 @@ main{width:min(1120px,100%);margin:auto;padding:34px clamp(15px,4vw,42px) 60px}
 <div style="overflow-x:auto;margin-top:16px"><table style="width:100%;border-collapse:collapse;min-width:560px;font-size:13px"><thead><tr><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Member</th><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Email</th><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Reward</th><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Claimed At</th></tr></thead><tbody id="roundClaimsBody"><tr><td colspan="4" style="padding:12px;color:var(--muted)">No claim records loaded.</td></tr></tbody></table></div>
 </section>
 <section class="panel">
-   <div class="eyebrow">Current implementation note</div><h2>How the public box works today</h2>
-   <div class="notice"><div>ⓘ</div><div><strong>Display and Telegram redirect only</strong>The current homepage button opens the Telegram link configured above. The existing website does not yet run a random draw, record individual claims or winners, or automatically add prize money to member wallets. This panel will not show fake claim or sales statistics.</div></div>
+   <div class="eyebrow">Current implementation note</div><h2>How the public box works</h2>
+   <div class="notice"><div>ⓘ</div><div><strong>Secure prize draw · Wallet credit disabled</strong>The homepage Mystery Box uses the saved finite prize pool. Each signed-in member can claim once per round; the server records the randomly selected reward and removes it from the remaining pool. Admins can review claims and start a new round after the current round ends. Rewards are recorded only and are not added to member wallets.</div></div>
   </section>
   <div class="footer">Property Zone · Mystery Box Admin · Restricted to verified active administrators</div>
  </main>
