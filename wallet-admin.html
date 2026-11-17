@@ -160,12 +160,11 @@ async function reviewRequest(id,action){
   }
 
   if(r.requestType==="wallet-deposit"&&action==="approve"){
-   if(wallet.balanceBDT==null&&Number(wallet.balanceUSD||0)>0)throw new Error("Legacy USD wallet needs manual review before deposit approval.");
-   const balance=Number(wallet.balanceBDT??0);
+   const balance=Number(wallet.depositBalanceBDT??0);
    if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review before crediting.");
    tx.set(walletRef,{
     uid:r.uid,
-    balanceBDT:Math.round((balance+amount)*100)/100,
+    depositBalanceBDT:Math.round((balance+amount)*100)/100,
     walletSegregationVersion:walletSnap.exists()?Number(wallet.walletSegregationVersion||1):2,
     updatedAt:serverTimestamp(),
     lastDepositRequestId:id
@@ -177,10 +176,9 @@ async function reviewRequest(id,action){
    if(action==="approve"){
     if(r.reservedFunds!==true||pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
     if(sourceInfo.source==="deposit"){
-     if(wallet.balanceBDT==null&&Number(wallet.balanceUSD||0)>0)throw new Error("Legacy USD wallet needs manual review before withdrawal.");
-     const balance=Number(wallet.balanceBDT??0);
+     const balance=Number(wallet.depositBalanceBDT??0);
      if(!Number.isFinite(balance)||balance+0.000001<amount)throw new Error("Deposit Balance is lower than the withdrawal amount.");
-     tx.update(walletRef,{balanceBDT:Math.round((balance-amount)*100)/100,pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
+     tx.update(walletRef,{depositBalanceBDT:Math.round((balance-amount)*100)/100,pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
     }else if(sourceInfo.source==="profit"){
      const balance=Number(wallet.profitBalanceBDT||0);
      if(!Number.isFinite(balance)||balance+0.000001<amount)throw new Error("Profit Balance is lower than the withdrawal amount.");
