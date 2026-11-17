@@ -124,6 +124,13 @@ main{width:min(1120px,100%);margin:auto;padding:34px clamp(15px,4vw,42px) 60px}
    <p class="status" id="prizePoolStatus" role="status">Prize pool not loaded yet.</p>
   </section>
   <section class="panel">
+<div class="eyebrow">Live round control</div><h2>Round Status & Claim Records</h2>
+<div class="prize-summary"><div><small>PRIZES LEFT</small><strong id="roundRemaining">—</strong></div><div><small>CLAIMED</small><strong id="roundClaimed">—</strong></div><div><small>ROUND TOTAL</small><strong id="roundTotal">—</strong></div></div>
+<p class="status" id="roundStatus" role="status">Sign in to load round status.</p>
+<div class="prize-actions"><button class="btn" id="refreshRoundButton" type="button">Refresh Round & Claims</button><button class="btn secondary" id="startRoundButton" type="button">Start New Round</button></div>
+<div style="overflow-x:auto;margin-top:16px"><table style="width:100%;border-collapse:collapse;min-width:560px;font-size:13px"><thead><tr><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Member</th><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Email</th><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Reward</th><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Claimed At</th></tr></thead><tbody id="roundClaimsBody"><tr><td colspan="4" style="padding:12px;color:var(--muted)">No claim records loaded.</td></tr></tbody></table></div>
+</section>
+<section class="panel">
    <div class="eyebrow">Current implementation note</div><h2>How the public box works today</h2>
    <div class="notice"><div>ⓘ</div><div><strong>Display and Telegram redirect only</strong>The current homepage button opens the Telegram link configured above. The existing website does not yet run a random draw, record individual claims or winners, or automatically add prize money to member wallets. This panel will not show fake claim or sales statistics.</div></div>
   </section>
@@ -237,6 +244,41 @@ $("savePrizePoolButton").addEventListener("click",async()=>{
  finally{button.disabled=false;button.textContent="Save Prize Pool";}
 });
 
+const MYSTERY_BOX_API="https://prologisincpld.com/.netlify/functions/mystery-box-claim";
+async function mysteryBoxApi(action){
+ const user=auth.currentUser;
+ if(!user||!authorizedUid||user.uid!==authorizedUid)throw new Error("Admin session expired. Please sign in again.");
+ const token=await user.getIdToken();
+ const response=await fetch(MYSTERY_BOX_API,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({action})});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||data.success!==true)throw new Error(data.message||"Mystery Box request failed.");
+ return data;
+}
+async function refreshRoundStatus(){
+ const status=$("roundStatus");status.textContent="Loading round data…";
+ try{
+  const data=await mysteryBoxApi("admin-claims");
+  $("roundRemaining").textContent=String(data.remaining??0);
+  $("roundClaimed").textContent=String(data.claimedCount??0);
+  $("roundTotal").textContent=String(data.total??0);
+  status.textContent=!data.roundId?"No round started.":data.remaining===0?"Round exhausted.":data.claimLimit>0&&data.claimedCount>=data.claimLimit?"Claim limit reached.":"Round active.";
+  const body=$("roundClaimsBody");body.replaceChildren();
+  if(!data.claims?.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=4;td.textContent="No claims in this round.";tr.appendChild(td);body.appendChild(tr);}
+  for(const claim of (data.claims||[])){
+   const tr=document.createElement("tr");
+   for(const value of [claim.name||"Member",claim.email||"—","৳"+Number(claim.rewardAmount||0).toLocaleString("en-US"),claim.createdAt?new Date(claim.createdAt).toLocaleString():"—"]){const td=document.createElement("td");td.style.padding="9px";td.textContent=value;tr.appendChild(td);}
+   body.appendChild(tr);
+  }
+ }catch(error){status.textContent="Could not load: "+(error.message||String(error));}
+}
+$("refreshRoundButton").addEventListener("click",refreshRoundStatus);
+$("startRoundButton").addEventListener("click",async()=>{
+ if(!confirm("Start a new round using the saved prize pool? This resets the available prizes for a new round."))return;
+ const button=$("startRoundButton");button.disabled=true;
+ try{await mysteryBoxApi("admin-reset-round");await refreshRoundStatus();}
+ catch(error){$("roundStatus").textContent="Could not start: "+(error.message||String(error));}
+ finally{button.disabled=false;}
+});
 async function authorize(user){
  if(!user){
   authorizedUid=null;
@@ -264,6 +306,7 @@ async function authorize(user){
  document.body.classList.add("authorized");
  setLoginError("");
  await loadSettings();
+ await refreshRoundStatus();
 }
 
 function queueAuthorization(user){
