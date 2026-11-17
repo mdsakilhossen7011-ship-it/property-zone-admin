@@ -145,23 +145,10 @@ async function reviewRequest(id,action){
   const walletRef=doc(db,"wallets",r.uid),walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};
   let packageRef=null,packageSnap=null,sourceInfo=null,settingsSnap=null;
   if(r.requestType==="wallet-withdraw"){
-   sourceInfo=parseWithdrawalSource(r);
-   if(sourceInfo.source==="legacy"&&action==="approve")throw new Error("This is an older withdrawal request without a source. Manual review is required; do not approve it as a new source-specific withdrawal.");
-   if(!walletSnap.exists())throw new Error("Member wallet is missing; cannot safely process withdrawal.");
-   if(sourceInfo.source==="package"){
-    if(!sourceInfo.packageId)throw new Error("Package ID is missing from this withdrawal request.");
-    packageRef=doc(db,"activePackages",sourceInfo.packageId);[packageSnap,settingsSnap]=await Promise.all([tx.get(packageRef),tx.get(doc(db,"siteSettings","wallet"))]);
-   }
-  }
-  if(r.requestType==="wallet-deposit"&&action==="approve"){
-   if(wallet.balanceBDT==null&&Number(wallet.balanceUSD||0)>0)throw new Error("Legacy USD wallet needs manual review before deposit approval.");
-   let balance=Number(wallet.balanceBDT??0);if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review before crediting.");
-   tx.set(walletRef,{uid:r.uid,balanceBDT:Math.round((balance+amount)*100)/100,updatedAt:serverTimestamp(),lastDepositRequestId:id},{merge:true});
-  }
-  if(r.requestType==="wallet-withdraw"){
    const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0));
-   if(r.reservedFunds!==true||pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
    if(action==="approve"){
+    if(sourceInfo.source==="legacy")throw new Error("This older withdrawal has no source marker. Manual review is required.");
+    if(r.reservedFunds!==true||pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
     if(sourceInfo.source==="deposit"){
      if(wallet.balanceBDT==null&&Number(wallet.balanceUSD||0)>0)throw new Error("Legacy USD wallet needs manual review before withdrawal.");
      const balance=Number(wallet.balanceBDT??0);
@@ -178,7 +165,8 @@ async function reviewRequest(id,action){
      tx.update(packageRef,{status:"withdrawn",withdrawalRequestId:id,withdrawnAt:serverTimestamp(),updatedAt:serverTimestamp()});
      tx.update(walletRef,{pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
     }
-   }else{
+   }else if(r.reservedFunds===true){
+    if(pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent; Admin must inspect it.");
     tx.update(walletRef,{pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalRejectedId:id});
    }
   }
