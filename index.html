@@ -498,10 +498,8 @@ async function loadMembers(){
   const wallets=new Map(walletSnap.docs.map(d=>[d.id,d.data()]));
   const rate=Number(settingsSnap.exists()?settingsSnap.data().exchangeRateBDT||0:0);
   memberRecords=snap.docs.map(d=>{
-   const wallet=wallets.get(d.id)||null;let balance=null;
-   if(wallet&&Number.isFinite(Number(wallet.balanceBDT)))balance=Number(wallet.balanceBDT);
-   else if(wallet&&Number.isFinite(Number(wallet.balanceUSD))&&Number(wallet.balanceUSD)>=0&&rate>0)balance=Math.round(Number(wallet.balanceUSD)*rate*100)/100;
-   else if(!wallet)balance=0;
+   const wallet=wallets.get(d.id)||null;let balance=0;
+   if(wallet&&wallet.depositBalanceBDT!==undefined){balance=Number(wallet.depositBalanceBDT);if(!Number.isFinite(balance)||balance<0)balance=null;}
    return {uid:d.id,...d.data(),publicId:ids.get(d.id)||"",walletBalanceBDT:balance};
   });
   for(const member of memberRecords){if(!/^\d{7}$/.test(member.publicId)){member.publicId=await ensureAdminPublicId(member.uid);}}
@@ -614,27 +612,28 @@ document.getElementById("manualCreditButton").addEventListener("click",async()=>
  if(!member){messageStatus(status,"Select a member account first.",true);return;}
  if(!Number.isSafeInteger(amountBDT)||amountBDT<=0){messageStatus(status,"Enter a whole BDT amount greater than zero.",true);return;}
  if(!reason||reason.length>180){messageStatus(status,"Write a reason (maximum 180 characters).",true);return;}
- if(!confirm("Confirm wallet "+(action==="credit"?"increase":"decrease")+"?\\nMember: "+(member.name||member.email||uid)+" ("+(member.publicId||uid)+")\\nCurrent: ৳"+Number(member.walletBalanceBDT||0).toLocaleString("en-US")+"\\nAmount: ৳"+amountBDT.toLocaleString("en-US")+"\\nReason: "+reason))return;
- button.disabled=true;button.textContent="Updating…";messageStatus(status,"Checking member and safely updating Main Wallet…");
+ if(!confirm("Confirm Deposit Balance "+(action==="credit"?"increase":"decrease")+"?\\nMember: "+(member.name||member.email||uid)+" ("+(member.publicId||uid)+")\\nCurrent: ৳"+Number(member.walletBalanceBDT||0).toLocaleString("en-US")+"\\nAmount: ৳"+amountBDT.toLocaleString("en-US")+"\\nReason: "+reason))return;
+ button.disabled=true;button.textContent="Updating…";messageStatus(status,"Checking member and safely updating Deposit Balance…");
  try{
   const updatedBalance=await runTransaction(db,async tx=>{
    const memberRef=doc(db,"members",uid),walletRef=doc(db,"wallets",uid),settingsRef=doc(db,"siteSettings","wallet"),logRef=doc(collection(db,"activityLogs"));
    const ledgerRef=doc(db,"walletLedgers",uid);
    const [memberSnap,walletSnap,settingsSnap,ledgerSnap]=await Promise.all([tx.get(memberRef),tx.get(walletRef),tx.get(settingsRef),tx.get(ledgerRef)]);
    if(!memberSnap.exists())throw new Error("Member account no longer exists.");
-   if(ledgerSnap.exists())throw new Error("This member has a segregated wallet ledger. Legacy Main Wallet adjustment is blocked; use the ledger review process.");
-   const settings=settingsSnap.exists()?settingsSnap.data():{},rate=Number(settings.exchangeRateBDT||0),wallet=walletSnap.exists()?walletSnap.data():{};let balance=Number(wallet.balanceBDT);
-   if(!Number.isFinite(balance)){const legacy=Number(wallet.balanceUSD||0);if(!Number.isFinite(legacy)||legacy<0)throw new Error("Member wallet balance is invalid.");if(legacy>0&&(!Number.isFinite(rate)||rate<=0))throw new Error("Saved conversion rate is missing for this legacy wallet.");balance=Math.round(legacy*rate*100)/100;}
-   const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0)),nextBalance=Math.round((action==="debit"?balance-amountBDT:balance+amountBDT)*100)/100;
-   if(action==="debit"&&nextBalance+0.000001<pending)throw new Error("Cannot reduce balance below the member's reserved pending-withdrawal amount (৳"+pending+").");
-   if(nextBalance<0)throw new Error("Insufficient wallet balance for this decrease.");
-   if(walletSnap.exists())tx.update(walletRef,{balanceBDT:nextBalance,updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});else tx.set(walletRef,{uid,balanceBDT:nextBalance,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});
-   tx.set(logRef,{action:action==="credit"?"Admin wallet balance increased":"Admin wallet balance decreased",details:(member.publicId||uid)+" · "+(member.email||member.name||uid)+" · ৳"+amountBDT+" BDT · "+reason,adminUid:auth.currentUser?.uid||"",adminEmail:auth.currentUser?.email||"",targetUid:uid,targetPublicId:member.publicId||"",adjustmentType:action,adjustmentBDT:amountBDT,beforeBalanceBDT:balance,afterBalanceBDT:nextBalance,reason,createdAt:serverTimestamp()});
+   if(ledgerSnap.exists())throw new Error("This member has a segregated wallet ledger. Deposit Balance adjustment through this legacy admin panel is blocked to protect the separate ledger.");
+   const wallet=walletSnap.exists()?walletSnap.data():{};
+   const rawDeposit=wallet.depositBalanceBDT===undefined?0:Number(wallet.depositBalanceBDT);
+   if(!Number.isFinite(rawDeposit)||rawDeposit<0)throw new Error("Member Deposit Balance is invalid.");
+   const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0)),nextBalance=Math.round((action==="debit"?rawDeposit-amountBDT:rawDeposit+amountBDT)*100)/100;
+   if(action==="debit"&&nextBalance+0.000001<pending)throw new Error("Cannot reduce Deposit Balance below the member's reserved pending-withdrawal amount (৳"+pending+").");
+   if(nextBalance<0)throw new Error("Insufficient Deposit Balance for this decrease.");
+   if(walletSnap.exists())tx.update(walletRef,{depositBalanceBDT:nextBalance,walletSegregationVersion:2,updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});else tx.set(walletRef,{uid,depositBalanceBDT:nextBalance,walletSegregationVersion:2,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),lastAdminAdjustmentAt:serverTimestamp(),lastAdminAdjustmentBy:auth.currentUser?.uid||""});
+   tx.set(logRef,{action:action==="credit"?"Admin Deposit Balance increased":"Admin Deposit Balance decreased",details:(member.publicId||uid)+" · "+(member.email||member.name||uid)+" · ৳"+amountBDT+" BDT · "+reason,adminUid:auth.currentUser?.uid||"",adminEmail:auth.currentUser?.email||"",targetUid:uid,targetPublicId:member.publicId||"",adjustmentType:action,adjustmentBDT:amountBDT,beforeBalanceBDT:rawDeposit,afterBalanceBDT:nextBalance,balanceType:"deposit",reason,createdAt:serverTimestamp()});
    return nextBalance;
   });
-  messageStatus(status,"Success. New Main Wallet balance: ৳"+updatedBalance.toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2})+". Adjustment saved in the admin activity log.");
+  messageStatus(status,"Success. New Deposit Balance: ৳"+updatedBalance.toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2})+". Adjustment saved in the admin activity log.");
   document.getElementById("manualCreditBDT").value="";document.getElementById("manualBalanceReason").value="";await loadMembers();await loadActivity();
- }catch(e){messageStatus(status,"Could not update wallet balance: "+e.message,true);}
+ }catch(e){messageStatus(status,"Could not update Deposit Balance: "+e.message,true);}
  finally{button.disabled=false;button.textContent="Update Member Balance";}
 });
 async function loadPaymentAccounts(){
