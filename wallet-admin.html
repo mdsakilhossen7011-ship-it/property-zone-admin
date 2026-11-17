@@ -138,16 +138,43 @@ function parseWithdrawalSource(request){
 async function reviewRequest(id,action){
  const requestRef=doc(db,"propertyEnquiries",id);
  await runTransaction(db,async tx=>{
-  const requestSnap=await tx.get(requestRef);if(!requestSnap.exists())throw new Error("Request no longer exists.");
-  const r=requestSnap.data();if(r.status!=="pending")throw new Error("This request has already been processed.");
+  const requestSnap=await tx.get(requestRef);
+  if(!requestSnap.exists())throw new Error("Request no longer exists.");
+  const r=requestSnap.data();
+  if(r.status!=="pending")throw new Error("This request has already been processed.");
   if(!["wallet-deposit","wallet-withdraw"].includes(r.requestType))throw new Error("Unsupported request type.");
-  const amount=Number(r.amountBDT);if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("Invalid request amount.");
+  const amount=Number(r.amountBDT);
+  if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("Invalid request amount.");
   const walletRef=doc(db,"wallets",r.uid),walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};
-  let packageRef=null,packageSnap=null,sourceInfo=null,settingsSnap=null;
+  let sourceInfo=null,packageRef=null,packageSnap=null,settingsSnap=null;
+
+  if(r.requestType==="wallet-withdraw"){
+   sourceInfo=parseWithdrawalSource(r);
+   if(action==="approve"&&sourceInfo.source==="legacy")throw new Error("This older withdrawal has no source marker. Manual review is required.");
+   if(!walletSnap.exists())throw new Error("Member wallet is missing; cannot safely process withdrawal.");
+   if(action==="approve"&&sourceInfo.source==="package"){
+    if(!sourceInfo.packageId)throw new Error("Package ID is missing from this withdrawal request.");
+    packageRef=doc(db,"activePackages",sourceInfo.packageId);
+    [packageSnap,settingsSnap]=await Promise.all([tx.get(packageRef),tx.get(doc(db,"siteSettings","wallet"))]);
+   }
+  }
+
+  if(r.requestType==="wallet-deposit"&&action==="approve"){
+   if(wallet.balanceBDT==null&&Number(wallet.balanceUSD||0)>0)throw new Error("Legacy USD wallet needs manual review before deposit approval.");
+   const balance=Number(wallet.balanceBDT??0);
+   if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review before crediting.");
+   tx.set(walletRef,{
+    uid:r.uid,
+    balanceBDT:Math.round((balance+amount)*100)/100,
+    walletSegregationVersion:walletSnap.exists()?Number(wallet.walletSegregationVersion||1):2,
+    updatedAt:serverTimestamp(),
+    lastDepositRequestId:id
+   },{merge:true});
+  }
+
   if(r.requestType==="wallet-withdraw"){
    const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0));
    if(action==="approve"){
-    if(sourceInfo.source==="legacy")throw new Error("This older withdrawal has no source marker. Manual review is required.");
     if(r.reservedFunds!==true||pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
     if(sourceInfo.source==="deposit"){
      if(wallet.balanceBDT==null&&Number(wallet.balanceUSD||0)>0)throw new Error("Legacy USD wallet needs manual review before withdrawal.");
@@ -160,7 +187,8 @@ async function reviewRequest(id,action){
      tx.update(walletRef,{profitBalanceBDT:Math.round((balance-amount)*100)/100,pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
     }else if(sourceInfo.source==="package"){
      if(!packageSnap||!packageSnap.exists())throw new Error("Selected package no longer exists.");
-     const p=packageSnap.data(),rate=Number(settingsSnap?.exists()?settingsSnap.data().exchangeRateBDT||0:0),principal=Number(p.amountBDT!=null?p.amountBDT:Number(p.amountUSD||0)*Number(p.exchangeRateBDT||rate));
+     const p=packageSnap.data(),rate=Number(settingsSnap?.exists()?settingsSnap.data().exchangeRateBDT||0:0);
+     const principal=Number(p.amountBDT!=null?p.amountBDT:Number(p.amountUSD||0)*Number(p.exchangeRateBDT||rate));
      if(p.uid!==r.uid||p.status!=="active"||!Number.isFinite(principal)||Math.abs(principal-amount)>0.001)throw new Error("Package is no longer active or the amount does not match the full package.");
      tx.update(packageRef,{status:"withdrawn",withdrawalRequestId:id,withdrawnAt:serverTimestamp(),updatedAt:serverTimestamp()});
      tx.update(walletRef,{pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
@@ -170,6 +198,7 @@ async function reviewRequest(id,action){
     tx.update(walletRef,{pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalRejectedId:id});
    }
   }
+
   tx.update(requestRef,{status:action==="approve"?"approved":"rejected",reviewedAt:serverTimestamp(),reviewedBy:activeUser.email});
  });
 }
