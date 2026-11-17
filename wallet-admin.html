@@ -27,16 +27,6 @@ button,input{font:inherit}.wrap{max-width:1400px;margin:auto;padding:26px}.top{d
    <div class="stat"><small>Approved requests</small><strong id="approvedCount">0</strong></div>
    <div class="stat"><small>Rejected requests</small><strong id="rejectedCount">0</strong></div>
   </div>
-  <section class="column" style="margin-bottom:18px">
-   <div class="column-head"><div><h2>Reviewed Legacy Wallet Migration</h2><div class="muted" style="font-size:11px;margin-top:4px">Use only after checking the read-only migration audit and source records.</div></div><span class="tag">MIGRATION</span></div>
-   <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
-    <div><label for="migrationUid">Member Firebase UID</label><input id="migrationUid" autocomplete="off" placeholder="Exact Firebase UID"></div>
-    <div><label for="migrationDeposit">Deposit Balance (BDT)</label><input id="migrationDeposit" type="number" min="0" step="0.01" value="0"></div>
-    <div><label for="migrationPackage">Active Package Principal (BDT)</label><input id="migrationPackage" type="number" min="0" step="0.01" value="0"></div>
-    <div><label for="migrationProfit">Profit Balance (BDT)</label><input id="migrationProfit" type="number" min="0" step="0.01" value="0"></div>
-   </div>
-   <div style="padding:0 18px 18px"><button id="migrationBtn" class="btn" type="button">Run reviewed migration</button><p id="migrationMessage" class="message" role="status">Migration is blocked if legacy balance splits do not reconcile exactly or pending legacy withdrawals exist.</p></div>
-  </section>
   <main class="columns">
    <section class="column deposit"><div class="column-head"><div><h2>Deposit Requests</h2><div class="muted" style="font-size:11px;margin-top:4px">Verify payment received before approval</div></div><span class="tag">DEPOSIT</span></div><div class="filters" data-kind="deposit"><button class="filter active" data-filter="pending">Pending</button><button class="filter" data-filter="approved">Approved</button><button class="filter" data-filter="rejected">Rejected</button><button class="filter" data-filter="all">All</button></div><div id="depositList" class="list"><div class="empty">Loading requests…</div></div></section>
    <section class="column withdraw"><div class="column-head"><div><h2>Withdrawal Requests</h2><div class="muted" style="font-size:11px;margin-top:4px">Send payout before approval</div></div><span class="tag">WITHDRAW</span></div><div class="filters" data-kind="withdraw"><button class="filter active" data-filter="pending">Pending</button><button class="filter" data-filter="approved">Approved</button><button class="filter" data-filter="rejected">Rejected</button><button class="filter" data-filter="all">All</button></div><div id="withdrawList" class="list"><div class="empty">Loading requests…</div></div></section>
@@ -123,7 +113,7 @@ function renderList(kind,items){
   const when=r.createdAt?.toDate?r.createdAt.toDate().toLocaleString():"Date not available";
   const actions=status==="pending"?'<div class="actions"><button class="approve" data-action="approve" data-id="'+esc(r.id)+'" '+(busy.has(r.id)?"disabled":"")+'>✓ Approve</button><button class="reject" data-action="reject" data-id="'+esc(r.id)+'" '+(busy.has(r.id)?"disabled":"")+'>✕ Reject</button></div>':"";
   const proof=isDeposit?(r.paymentProofData?'<div style="margin-top:13px"><div style="font-size:11px;color:var(--muted);margin-bottom:7px;font-weight:800">PAYMENT SCREENSHOT</div><div id="proof-'+esc(r.id)+'" style="padding:10px;background:#0c1727;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px">Loading screenshot…</div></div>':'<div style="margin-top:12px;font-size:12px;color:var(--muted)">No screenshot attached (older request).</div>'):"";
-  return '<article class="request"><div class="req-top"><div><h3>'+esc(r.name||"Member")+'</h3><div class="req-email">'+esc(r.email||r.uid||"No email")+'</div></div><div class="req-amount">'+money(r.amountBDT)+'</div></div><span class="status '+status+'">'+esc(status)+'</span><div class="details">'+detail("Payment method",r.paymentMethod)+detail(isDeposit?"Sender account":"Member account",memberAccount)+detail(isDeposit?"Paid to":"Payout info",payout)+(isDeposit?"":detail("Transaction ID",r.transactionId||"Not applicable"))+detail("Request date",when)+detail("Member ID",r.publicId||publicIds.get(r.uid)||"Not assigned yet")+detail("Firebase UID",r.uid)+'</div>'+proof+actions+'</article>';
+  return '<article class="request"><div class="req-top"><div><h3>'+esc(r.name||"Member")+'</h3><div class="req-email">'+esc(r.email||r.uid||"No email")+'</div></div><div class="req-amount">'+money(r.amountBDT)+'</div></div><span class="status '+status+'">'+esc(status)+'</span><div class="details">'+detail("Payment method",r.paymentMethod)+detail(isDeposit?"Sender account":"Member account",memberAccount)+detail(isDeposit?"Paid to":"Payout info",payout)+(isDeposit?"":detail("Transaction ID",r.transactionId||"Not applicable"))+detail("Request date",when)+(isDeposit?"":detail("Withdrawal source",parseWithdrawalSource(r).source==="legacy"?"Legacy · manual review":parseWithdrawalSource(r).source+(parseWithdrawalSource(r).packageId?" · "+parseWithdrawalSource(r).packageId:"")))+detail("Member ID",r.publicId||publicIds.get(r.uid)||"Not assigned yet")+detail("Firebase UID",r.uid)+'</div>'+proof+actions+'</article>';
  }).join("");
  if(kind==="deposit")filtered.forEach(r=>{if(r.paymentProofData)loadDepositProof(r.id,r.paymentProofData);});
 }
@@ -141,40 +131,59 @@ document.addEventListener("click",async e=>{
  catch(error){$("appMessage").textContent="Action failed: "+error.message;}
  finally{busy.delete(id);render();}
 });
-$("migrationBtn").addEventListener("click",async()=>{
- const uid=$("migrationUid").value.trim(),depositBDT=Number($("migrationDeposit").value),packageBDT=Number($("migrationPackage").value),profitBDT=Number($("migrationProfit").value);
- const message=$("migrationMessage"),button=$("migrationBtn");
- if(!uid||![depositBDT,packageBDT,profitBDT].every(n=>Number.isFinite(n)&&n>=0)){message.textContent="Enter a valid UID and non-negative BDT classifications.";return;}
- if(!confirm("Confirm only after verifying the member's ledger split from the audit and source records. This creates the new ledger and cannot be repeated."))return;
- button.disabled=true;message.textContent="Checking legacy wallet and active packages…";
- try{
-  const settingsSnap=await getDoc(doc(db,"siteSettings","wallet")),settings=settingsSnap.exists()?settingsSnap.data():{};
-  const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\/+$/,"");
-  if(!apiBase)throw new Error("Wallet Ledger API URL is not configured in siteSettings/wallet.");
-  const apiUrl=new URL(apiBase);if(apiUrl.protocol!=="https:")throw new Error("Wallet API must use HTTPS.");
-  const token=await activeUser.getIdToken();
-  const response=await fetch(apiUrl.href+"/v1/admin/migrate-member",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({uid,depositBDT,packageBDT,profitBDT})});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(result.error||"Migration failed.");
-  message.textContent="Migration created for "+result.uid+". Deposit ৳"+result.depositBDT+", Package ৳"+result.packageBDT+", Profit ৳"+result.profitBDT+".";
- }catch(error){message.textContent="Migration blocked: "+error.message;}
- finally{button.disabled=false;}
-});
-async function reviewRequest(id,action){
- const settingsSnap=await getDoc(doc(db,"siteSettings","wallet"));
- const settings=settingsSnap.exists()?settingsSnap.data():{};
- const apiBase=String(settings.walletLedgerApiUrl||"").trim().replace(/\/+$/,"");
- if(!apiBase)throw new Error("Wallet Ledger API URL is not configured in siteSettings/wallet.");
- let apiUrl;try{apiUrl=new URL(apiBase);}catch(_){throw new Error("Wallet API URL is invalid.");}
- if(apiUrl.protocol!=="https:")throw new Error("Wallet API must use HTTPS.");
- const token=await activeUser.getIdToken();
- const response=await fetch(apiUrl.href+"/v1/admin/wallet-decision",{
-  method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
-  body:JSON.stringify({requestId:id,action})
- });
- const result=await response.json().catch(()=>({}));
- if(!response.ok)throw new Error(result.error||"Server-side wallet review failed.");
+function parseWithdrawalSource(request){
+ const match=String(request?.message||'').match(/\[PZ_SOURCE=(deposit|package|profit)(?:;PACKAGE_ID=([^\]]+))?\]/);
+ return match?{source:match[1],packageId:match[2]||''}:{source:'legacy',packageId:''};
 }
+async function reviewRequest(id,action){
+ const requestRef=doc(db,"propertyEnquiries",id);
+ await runTransaction(db,async tx=>{
+  const requestSnap=await tx.get(requestRef);if(!requestSnap.exists())throw new Error("Request no longer exists.");
+  const r=requestSnap.data();if(r.status!=="pending")throw new Error("This request has already been processed.");
+  if(!["wallet-deposit","wallet-withdraw"].includes(r.requestType))throw new Error("Unsupported request type.");
+  const amount=Number(r.amountBDT);if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("Invalid request amount.");
+  const walletRef=doc(db,"wallets",r.uid),walletSnap=await tx.get(walletRef),wallet=walletSnap.exists()?walletSnap.data():{};
+  let packageRef=null,packageSnap=null,sourceInfo=null;
+  if(r.requestType==="wallet-withdraw"){
+   sourceInfo=parseWithdrawalSource(r);
+   if(sourceInfo.source==="legacy")throw new Error("This is an older withdrawal request without a source. Manual review is required; do not approve it as a new source-specific withdrawal.");
+   if(!walletSnap.exists())throw new Error("Member wallet is missing; cannot safely process withdrawal.");
+   if(sourceInfo.source==="package"){
+    if(!sourceInfo.packageId)throw new Error("Package ID is missing from this withdrawal request.");
+    packageRef=doc(db,"activePackages",sourceInfo.packageId);packageSnap=await tx.get(packageRef);
+   }
+  }
+  if(r.requestType==="wallet-deposit"&&action==="approve"){
+   let balance=Number(wallet.balanceBDT??0);if(!Number.isFinite(balance)||balance<0)throw new Error("Wallet balance needs manual review before crediting.");
+   tx.set(walletRef,{uid:r.uid,balanceBDT:Math.round((balance+amount)*100)/100,updatedAt:serverTimestamp(),lastDepositRequestId:id},{merge:true});
+  }
+  if(r.requestType==="wallet-withdraw"){
+   const pending=Math.max(0,Number(wallet.pendingWithdrawalBDT||0));
+   if(r.reservedFunds!==true||pending+0.000001<amount)throw new Error("Reserved withdrawal balance is inconsistent. Please inspect this wallet manually.");
+   if(action==="approve"){
+    if(sourceInfo.source==="deposit"){
+     const balance=Number(wallet.balanceBDT??0);
+     if(!Number.isFinite(balance)||balance+0.000001<amount)throw new Error("Deposit Balance is lower than the withdrawal amount.");
+     tx.update(walletRef,{balanceBDT:Math.round((balance-amount)*100)/100,pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
+    }else if(sourceInfo.source==="profit"){
+     const balance=Number(wallet.profitBalanceBDT||0);
+     if(!Number.isFinite(balance)||balance+0.000001<amount)throw new Error("Profit Balance is lower than the withdrawal amount.");
+     tx.update(walletRef,{profitBalanceBDT:Math.round((balance-amount)*100)/100,pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
+    }else if(sourceInfo.source==="package"){
+     if(!packageSnap||!packageSnap.exists())throw new Error("Selected package no longer exists.");
+     const p=packageSnap.data(),principal=Number(p.amountBDT||0);
+     if(p.uid!==r.uid||p.status!=="active"||!Number.isFinite(principal)||Math.abs(principal-amount)>0.001)throw new Error("Package is no longer active or the amount does not match the full package.");
+     tx.update(packageRef,{status:"withdrawn",withdrawalRequestId:id,withdrawnAt:serverTimestamp(),updatedAt:serverTimestamp()});
+     tx.update(walletRef,{pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalProcessedId:id});
+    }
+   }else{
+    tx.update(walletRef,{pendingWithdrawalBDT:Math.round((pending-amount)*100)/100,updatedAt:serverTimestamp(),lastWithdrawalRejectedId:id});
+   }
+  }
+  tx.update(requestRef,{status:action==="approve"?"approved":"rejected",reviewedAt:serverTimestamp(),reviewedBy:activeUser.email});
+ });
+}
+
 </script>
 </body>
 </html>
